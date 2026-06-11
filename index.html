@@ -738,10 +738,21 @@ function downloadTemplate() {
 
 function normDate(v) {
   if (!v) return '';
-  let s = String(v).trim().replace(/\//g, '-');
-  const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (!m) return null;
-  return m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
+  if (v instanceof Date && !isNaN(v)) {
+    return v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0') + '-' + String(v.getDate()).padStart(2, '0');
+  }
+  const s = String(v).trim().replace(/日/g, '').replace(/[\/.年月]/g, '-');
+  let m, y, mo, d;
+  if ((m = s.match(/^(\d{3,4})-(\d{1,2})-(\d{1,2})(?!\d)/))) {
+    y = +m[1]; mo = +m[2]; d = +m[3];
+    if (y < 1000) y += 1911; /* 民國年：115/6/11 → 2026-06-11 */
+  } else if ((m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})(?!\d)/))) {
+    mo = +m[1]; d = +m[2]; y = +m[3]; /* 美式月日年：Excel/讀檔元件常見輸出 */
+    y = y < 100 ? y + 2000 : (y < 1000 ? y + 1911 : y);
+  } else return null;
+  const dt = new Date(y, mo - 1, d);
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+  return y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0');
 }
 
 function handleImportFile(input) {
@@ -752,9 +763,9 @@ function handleImportFile(input) {
     reader.onload = e => {
       let rows;
       try {
-        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        rows = XLSX.utils.sheet_to_json(ws, { raw: false, defval: '' });
+        rows = XLSX.utils.sheet_to_json(ws, { raw: false, defval: '', dateNF: 'yyyy-mm-dd' });
       } catch (err) {
         showToast('檔案讀取失敗，請確認格式');
         return;
@@ -785,7 +796,7 @@ function parseImportRows(rows) {
     let date = currentDate;
     if (rawDate) {
       const nd = normDate(rawDate);
-      if (nd === null) { errors.push('第 ' + line + ' 列：日期格式錯誤（' + rawDate + '），請用 YYYY-MM-DD'); return; }
+      if (nd === null) { errors.push('第 ' + line + ' 列：日期格式錯誤（' + rawDate + '），請用如 2026-06-11 或民國 115/6/11'); return; }
       date = nd;
     }
     const r = parseInt(rRow, 10);
