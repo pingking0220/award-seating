@@ -1110,12 +1110,17 @@ function parseImportRows(rows) {
       errors.push('第 ' + line + ' 列：' + date + ' 第' + r + '排 ' + rZone + s + ' 已被 ' + DEPT_META[existing.dept].label + ' 預約，不可覆蓋（不同處室）');
       return;
     }
-    importQueue.push({ date: date, key: key, data: { dept: dept, award: award, name: name }, label: date + ' 第' + r + '排 ' + rZone + s, overwrite: !!existing });
+    importQueue.push({ date: date, key: key, data: { dept: dept, award: award, name: name }, label: date + ' 第' + r + '排 ' + rZone + s, overwrite: !!existing, old: existing || null });
   });
 
   const box = document.getElementById('import-result');
-  const owN = importQueue.filter(q => q.overwrite).length;
-  let html = '<b style="color:' + (importQueue.length ? '#3B6D11' : '#C0392B') + '">可匯入：' + importQueue.length + ' 筆' + (owN ? '（其中覆蓋同處室既有座位 ' + owN + ' 筆）' : '') + '</b>';
+  const owList = importQueue.filter(q => q.overwrite);
+  let html = '<b style="color:' + (importQueue.length ? '#3B6D11' : '#C0392B') + '">可匯入：' + importQueue.length + ' 筆' + (owList.length ? '（其中覆蓋同處室既有座位 ' + owList.length + ' 筆）' : '') + '</b>';
+  if (owList.length) {
+    html += '<br><b style="color:#B26B00">⚠ 將覆蓋的座位（按「確認匯入」後會再請你確認一次）：</b><br>'
+      + owList.slice(0, 10).map(q => escapeHtml(q.label + '：' + seatDataText(q.old) + ' → ' + seatDataText(q.data))).join('<br>');
+    if (owList.length > 10) html += '<br>…另有 ' + (owList.length - 10) + ' 筆覆蓋';
+  }
   if (errors.length) {
     html += '<br><b style="color:#C0392B">問題：' + errors.length + ' 筆</b><br>' + errors.slice(0, 12).map(escapeHtml).join('<br>');
     if (errors.length > 12) html += '<br>…另有 ' + (errors.length - 12) + ' 筆問題';
@@ -1125,7 +1130,34 @@ function parseImportRows(rows) {
   document.getElementById('btn-import-confirm').style.display = importQueue.length ? '' : 'none';
 }
 
+function seatDataText(d) {
+  if (!d) return '（空白）';
+  const t = [d.award, d.name].filter(Boolean).join('・');
+  return t || '（未填獎項／姓名）';
+}
+
 function applyImport() {
+  if (!importQueue.length) return;
+  /* 按下確認時用最新雲端資料再檢查一次（從預覽到按下確認之間，座位可能已被別人預約） */
+  const blocked = [];
+  const ow = [];
+  importQueue.forEach(q => {
+    const ex = (allData[q.date] || {})[q.key];
+    if (!ex) return;
+    if (ex.dept !== q.data.dept) blocked.push(q);
+    else ow.push({ label: q.label, oldData: ex, newData: q.data });
+  });
+  if (blocked.length) {
+    showToast('有 ' + blocked.length + ' 筆座位剛被其他處室預約，不可覆蓋；請重新選擇檔案檢查');
+    return;
+  }
+  if (ow.length) {
+    const lines = ow.slice(0, 8).map(o => o.label + '：' + seatDataText(o.oldData) + ' → ' + seatDataText(o.newData));
+    let msg = '以下 ' + ow.length + ' 個座位已有同處室預約，匯入將覆蓋原有資料：\n\n' + lines.join('\n');
+    if (ow.length > 8) msg += '\n…另有 ' + (ow.length - 8) + ' 筆';
+    msg += '\n\n確定要繼續覆蓋嗎？';
+    if (!confirm(msg)) return;
+  }
   const dates = {};
   const n = importQueue.length;
   if (db) {
