@@ -50,14 +50,14 @@ main{max-width:1560px;margin:0 auto;padding:20px 24px 60px}
 .row-label.r{text-align:left}
 .zone{display:flex;gap:5px}
 .aisle{width:34px;flex-shrink:0}
-.seat{width:86px;height:62px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;transition:border-color .1s, background .1s;overflow:hidden;padding:2px 3px}
+.seat{width:86px;height:72px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;transition:border-color .1s, background .1s;overflow:hidden;padding:2px 3px}
 .seat:hover:not(.booked){border-color:var(--sel)}
 .seat.selecting{outline:3px solid var(--sel);outline-offset:-3px}
 .seat.booked{cursor:pointer}
 .seat-no{font-size:11px;color:var(--muted);line-height:1}
 .seat.booked .seat-no{display:none}
 .seat-dept{font-size:12px;font-weight:700;line-height:1.2;max-width:80px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.seat-award{font-size:11px;line-height:1.2;max-width:80px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:.9}
+.seat-award{font-size:11px;line-height:1.2;max-width:80px;overflow:hidden;opacity:.9;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;word-break:break-word}
 .seat-name{font-size:11px;line-height:1.2;max-width:80px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:.75}
 #drag-rect{position:absolute;border:2px solid var(--sel);background:rgba(55,138,221,.12);pointer-events:none;display:none;z-index:10;border-radius:4px}
 
@@ -82,7 +82,11 @@ main{max-width:1560px;margin:0 auto;padding:20px 24px 60px}
 .modal-btns button{padding:9px 22px;border-radius:8px;font-size:14.5px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit;font-weight:500}
 .modal-btns button:active{transform:scale(.97)}
 #btn-confirm{background:var(--sel);color:#fff;border-color:var(--sel)}
-#btn-release-confirm{background:#C0392B;color:#fff;border-color:#C0392B}
+#release-edit{text-align:left}
+#release-edit .field{width:100%}
+#release-edit .field input{width:100%}
+#btn-release-del{background:#C0392B;color:#fff;border-color:#C0392B}
+#btn-release-save{background:var(--sel);color:#fff;border-color:var(--sel)}
 
 #toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--ink);color:#F7F6F3;padding:10px 22px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;white-space:nowrap}
 #toast.show{opacity:1}
@@ -141,7 +145,7 @@ body.norole .write-tool{display:none}
   header{padding:12px 14px;gap:8px}
   main{padding:14px 10px 50px}
   .field input{width:150px}
-  .seat{width:54px;height:52px}
+  .seat{width:54px;height:62px}
   .seat-dept{font-size:10px;max-width:50px}
   .seat-award,.seat-name{font-size:9px;max-width:50px}
   .aisle{width:20px}
@@ -222,12 +226,23 @@ body.norole .write-tool{display:none}
   </div>
 </div></div>
 
-<div class="overlay" id="release-overlay"><div class="modal" style="width:min(380px,100%)">
-  <h2>座位資料</h2>
+<div class="overlay" id="release-overlay"><div class="modal" style="width:min(400px,100%)">
+  <h2 id="release-title">座位資料</h2>
   <div id="release-info"></div>
-  <div class="modal-btns">
+  <div id="release-edit" style="display:none;margin-top:12px">
+    <div class="field" style="margin-bottom:10px">
+      <label>獎項名稱</label>
+      <input id="edit-award" type="text" maxlength="40" placeholder="例：閱讀楷模一年級">
+    </div>
+    <div class="field">
+      <label>得獎者姓名</label>
+      <input id="edit-name" type="text" maxlength="40" placeholder="例：王小明">
+    </div>
+  </div>
+  <div class="modal-btns" style="margin-top:16px">
     <button onclick="closeRelease()">關閉</button>
-    <button id="btn-release-confirm" onclick="confirmRelease()">解除預約</button>
+    <button id="btn-release-del" onclick="confirmRelease()">解除預約</button>
+    <button id="btn-release-save" onclick="saveSeatEdit()">儲存變更</button>
   </div>
 </div></div>
 
@@ -888,13 +903,24 @@ function showRelease(key) {
   if (!d) return;
   const m = DEPT_META[d.dept];
   const [r, z, s] = key.split('-').map(Number);
-  let info = '<b>第 ' + (r + 1) + ' 排 ' + ZONE_NAMES[z] + '區 第 ' + (s + 1) + ' 座</b><br>處室：' + m.label;
-  if (d.award) info += '<br>獎項：' + escapeHtml(d.award);
-  if (d.name) info += '<br>姓名：' + escapeHtml(d.name);
   const own = isAdmin() || d.dept === currentDept;
-  if (!own) info += '<br><span style="color:#C0392B">此座位屬於其他處室，僅供查看</span>';
+  let info = '<b>第 ' + (r + 1) + ' 排 ' + ZONE_NAMES[z] + '區 第 ' + (s + 1) + ' 座</b><br>處室：' + m.label;
+  const edit = document.getElementById('release-edit');
+  if (own) {
+    document.getElementById('release-title').textContent = '編輯座位 — ' + m.label;
+    document.getElementById('edit-award').value = d.award || '';
+    document.getElementById('edit-name').value = d.name || '';
+    edit.style.display = '';
+  } else {
+    document.getElementById('release-title').textContent = '座位資料 — ' + m.label;
+    if (d.award) info += '<br>獎項：' + escapeHtml(d.award);
+    if (d.name) info += '<br>姓名：' + escapeHtml(d.name);
+    info += '<br><span style="color:#C0392B">此座位屬於其他處室，僅供查看</span>';
+    edit.style.display = 'none';
+  }
   document.getElementById('release-info').innerHTML = info;
-  document.getElementById('btn-release-confirm').style.display = own ? '' : 'none';
+  document.getElementById('btn-release-del').style.display = own ? '' : 'none';
+  document.getElementById('btn-release-save').style.display = own ? '' : 'none';
   document.getElementById('release-overlay').classList.add('show');
 }
 
@@ -908,6 +934,17 @@ function confirmRelease() {
   const k = releaseSeatKey;
   closeRelease();
   persist(currentDate, { [k]: null }, '座位預約已解除');
+}
+
+function saveSeatEdit() {
+  if (!releaseSeatKey) return;
+  const k = releaseSeatKey;
+  const d = seats[k];
+  if (!d) { closeRelease(); return; }
+  const award = document.getElementById('edit-award').value.trim();
+  const name = document.getElementById('edit-name').value.trim();
+  closeRelease();
+  persist(currentDate, { [k]: { dept: d.dept, award: award, name: name } }, '已更新座位內容');
 }
 
 /* ---------- 匯出 ---------- */
