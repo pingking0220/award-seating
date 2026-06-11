@@ -1212,10 +1212,15 @@ function handleImportFile(input) {
   });
 }
 
+function sameSeat(a, b) {
+  return !!a && !!b && a.dept === b.dept && (a.award || '') === (b.award || '') && (a.name || '') === (b.name || '');
+}
+
 function parseImportRows(rows) {
   importQueue = [];
   const errors = [];
   const seen = {};
+  let sameCount = 0;
   rows.forEach((row, i) => {
     const line = i + 2;
     const get = names => { for (const n of names) { if (row[n] !== undefined) return String(row[n]).trim(); } return ''; };
@@ -1259,16 +1264,25 @@ function parseImportRows(rows) {
       errors.push('第 ' + line + ' 列：' + date + ' 第' + r + '排 ' + rZone + s + ' 已被 ' + DEPT_META[existing.dept].label + ' 預約，不可覆蓋（不同處室）');
       return;
     }
-    importQueue.push({ date: date, key: key, data: { dept: dept, award: award, name: name }, label: date + ' 第' + r + '排 ' + rZone + s, overwrite: !!existing, old: existing || null });
+    const newData = { dept: dept, award: award, name: name };
+    if (existing && sameSeat(existing, newData)) { sameCount++; return; }   // 內容完全相同 → 略過，不需確認
+    importQueue.push({ date: date, key: key, data: newData, label: date + ' 第' + r + '排 ' + rZone + s, overwrite: !!existing, old: existing || null });
   });
 
   const box = document.getElementById('import-result');
   const owList = importQueue.filter(q => q.overwrite);
-  let html = '<b style="color:' + (importQueue.length ? '#3B6D11' : '#C0392B') + '">可匯入：' + importQueue.length + ' 筆' + (owList.length ? '（其中覆蓋同處室既有座位 ' + owList.length + ' 筆）' : '') + '</b>';
-  if (owList.length) {
-    html += '<br><b style="color:#B26B00">⚠ 將覆蓋的座位（按「確認匯入」後會再請你確認一次）：</b><br>'
-      + owList.slice(0, 10).map(q => escapeHtml(q.label + '：' + seatDataText(q.old) + ' → ' + seatDataText(q.data))).join('<br>');
-    if (owList.length > 10) html += '<br>…另有 ' + (owList.length - 10) + ' 筆覆蓋';
+  const newCount = importQueue.length - owList.length;
+  let html;
+  if (!importQueue.length && sameCount && !errors.length) {
+    html = '<b style="color:#3B6D11">檔案內 ' + sameCount + ' 筆座位都與目前相同，沒有需要變更的項目。</b>';
+  } else {
+    html = '<b style="color:' + (importQueue.length ? '#3B6D11' : '#C0392B') + '">可匯入：' + importQueue.length + ' 筆（新增 ' + newCount + '、更新 ' + owList.length + '）</b>';
+    if (sameCount) html += '<br><span style="color:var(--muted)">另有 ' + sameCount + ' 筆與現況相同，將自動略過（不需確認）。</span>';
+    if (owList.length) {
+      html += '<br><b style="color:#B26B00">⚠ 內容有變動、將覆蓋的座位（按「確認匯入」後會再請你確認一次）：</b><br>'
+        + owList.slice(0, 10).map(q => escapeHtml(q.label + '：' + seatDataText(q.old) + ' → ' + seatDataText(q.data))).join('<br>');
+      if (owList.length > 10) html += '<br>…另有 ' + (owList.length - 10) + ' 筆覆蓋';
+    }
   }
   if (errors.length) {
     html += '<br><b style="color:#C0392B">問題：' + errors.length + ' 筆</b><br>' + errors.slice(0, 12).map(escapeHtml).join('<br>');
@@ -1293,8 +1307,8 @@ function applyImport() {
   importQueue.forEach(q => {
     const ex = (allData[q.date] || {})[q.key];
     if (!ex) return;
-    if (ex.dept !== q.data.dept) blocked.push(q);
-    else ow.push({ label: q.label, oldData: ex, newData: q.data });
+    if (ex.dept !== q.data.dept) { blocked.push(q); return; }
+    if (!sameSeat(ex, q.data)) ow.push({ date: q.date, key: q.key, label: q.label, oldData: ex, newData: q.data });
   });
   if (blocked.length) {
     showToast('有 ' + blocked.length + ' 筆座位剛被其他處室預約，不可覆蓋；請重新選擇檔案檢查');
@@ -1308,7 +1322,7 @@ function applyImport() {
     if (!confirm(msg)) return;
   }
   const owDates = {};
-  importQueue.forEach(q => { if (q.overwrite) owDates[q.date] = true; });
+  ow.forEach(o => { owDates[o.date] = true; });
   Object.keys(owDates).forEach(d => snapshotBeforeChange(d, '匯入覆蓋'));
   const dates = {};
   const n = importQueue.length;
