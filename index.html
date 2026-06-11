@@ -345,7 +345,9 @@ function todayStr() {
 function normalizeData(raw) {
   if (!raw || typeof raw !== 'object') return {};
   const keys = Object.keys(raw);
-  if (keys.length && keys.every(k => /^\d+-\d+-\d+$/.test(k))) {
+  /* 舊版 v1 格式：頂層直接是座位鍵（排-區-座，排為 1~2 位數），沒有日期層 → 包進今天。
+     注意：日期鍵（2026-06-11，年為 4 位數）不可符合此式，否則會把已分日期的資料再包一層。 */
+  if (keys.length && keys.every(k => /^\d{1,2}-\d-\d$/.test(k))) {
     const wrapped = {};
     wrapped[todayStr()] = raw;
     return wrapped;
