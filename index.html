@@ -50,6 +50,7 @@ main{max-width:1560px;margin:0 auto;padding:20px 24px 60px}
 .row-label.r{text-align:left}
 .zone{display:flex;gap:5px}
 .aisle{width:34px;flex-shrink:0}
+.seat-gap{width:86px;height:72px;flex-shrink:0}
 .seat{width:86px;height:72px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;transition:border-color .1s, background .1s;overflow:hidden;padding:2px 3px}
 .seat:hover:not(.booked){border-color:var(--sel)}
 .seat.selecting{outline:3px solid var(--sel);outline-offset:-3px}
@@ -145,7 +146,7 @@ body.norole .write-tool{display:none}
   header{padding:12px 14px;gap:8px}
   main{padding:14px 10px 50px}
   .field input{width:150px}
-  .seat{width:54px;height:62px}
+  .seat,.seat-gap{width:54px;height:62px}
   .seat-dept{font-size:10px;max-width:50px}
   .seat-award,.seat-name{font-size:9px;max-width:50px}
   .aisle{width:20px}
@@ -212,7 +213,7 @@ body.norole .write-tool{display:none}
     <span>教務處：<b id="st-edu">0</b></span>
     <span>學務處：<b id="st-stu">0</b></span>
     <span>輔導室：<b id="st-cou">0</b></span>
-    <span>合計：<b id="st-total">0</b> / 225 席</span>
+    <span>合計：<b id="st-total">0</b> / <span id="st-cap">225</span> 席</span>
   </div>
 </main>
 
@@ -346,6 +347,13 @@ const FIREBASE_CONFIG = {
 
 const ROWS = 15, ZONES = [4, 7, 4];
 const ZONE_NAMES = ['左', '中', '右'];
+/* 不存在的座位（出入口／走道等）：render 成空白、不可預約、不計入總數。鍵為「排索引-區索引-座索引」 */
+const REMOVED_SEATS = new Set([
+  '0-0-0', '0-0-1', '0-0-2', '0-0-3',     // 第1排 左1~左4
+  '0-2-0', '0-2-1', '0-2-2', '0-2-3',     // 第1排 右1~右4
+  '14-0-0', '14-0-1', '14-0-2', '14-0-3'  // 第15排 左1~左4
+]);
+const TOTAL_SEATS = ROWS * ZONES.reduce((a, b) => a + b, 0) - REMOVED_SEATS.size;
 const DEPT_META = {
   edu: { label: '教務處', bg: 'var(--edu-bg)', bd: 'var(--edu-bd)', tx: 'var(--edu-tx)' },
   stu: { label: '學務處', bg: 'var(--stu-bg)', bd: 'var(--stu-bd)', tx: 'var(--stu-tx)' },
@@ -632,6 +640,12 @@ function buildSeating() {
       const zone = document.createElement('div');
       zone.className = 'zone';
       for (let s = 0; s < cnt; s++) {
+        if (REMOVED_SEATS.has(seatKey(r, z, s))) {
+          const gap = document.createElement('div');
+          gap.className = 'seat-gap';
+          zone.appendChild(gap);
+          continue;
+        }
         const el = document.createElement('div');
         el.className = 'seat';
         el.id = 'seat-' + seatKey(r, z, s);
@@ -711,7 +725,7 @@ function renderAll() {
 
 function updateStatus() {
   const counts = { edu: 0, stu: 0, cou: 0 };
-  Object.values(seats).forEach(d => { if (d && counts[d.dept] !== undefined) counts[d.dept]++; });
+  Object.keys(seats).forEach(k => { const d = seats[k]; if (d && !REMOVED_SEATS.has(k) && counts[d.dept] !== undefined) counts[d.dept]++; });
   document.getElementById('st-edu').textContent = counts.edu;
   document.getElementById('st-stu').textContent = counts.stu;
   document.getElementById('st-cou').textContent = counts.cou;
@@ -1086,20 +1100,22 @@ function parseImportRows(rows) {
 
     const z = ZONE_NAMES.indexOf(rZone);
     const key = seatKey(r - 1, z, s - 1);
+    if (REMOVED_SEATS.has(key)) { errors.push('第 ' + line + ' 列：' + date + ' 第' + r + '排 ' + rZone + s + ' 不是有效座位（該位置已無座位）'); return; }
     const dupKey = date + '|' + key;
     if (seen[dupKey]) { errors.push('第 ' + line + ' 列：與檔案內第 ' + seen[dupKey] + ' 列座位重複'); return; }
     seen[dupKey] = line;
 
     const existing = (allData[date] || {})[key];
-    if (existing) {
-      errors.push('第 ' + line + ' 列：' + date + ' 第' + r + '排 ' + rZone + s + ' 已被 ' + DEPT_META[existing.dept].label + ' 預約，將略過');
+    if (existing && existing.dept !== dept) {
+      errors.push('第 ' + line + ' 列：' + date + ' 第' + r + '排 ' + rZone + s + ' 已被 ' + DEPT_META[existing.dept].label + ' 預約，不可覆蓋（不同處室）');
       return;
     }
-    importQueue.push({ date: date, key: key, data: { dept: dept, award: award, name: name }, label: date + ' 第' + r + '排 ' + rZone + s });
+    importQueue.push({ date: date, key: key, data: { dept: dept, award: award, name: name }, label: date + ' 第' + r + '排 ' + rZone + s, overwrite: !!existing });
   });
 
   const box = document.getElementById('import-result');
-  let html = '<b style="color:' + (importQueue.length ? '#3B6D11' : '#C0392B') + '">可匯入：' + importQueue.length + ' 筆</b>';
+  const owN = importQueue.filter(q => q.overwrite).length;
+  let html = '<b style="color:' + (importQueue.length ? '#3B6D11' : '#C0392B') + '">可匯入：' + importQueue.length + ' 筆' + (owN ? '（其中覆蓋同處室既有座位 ' + owN + ' 筆）' : '') + '</b>';
   if (errors.length) {
     html += '<br><b style="color:#C0392B">問題：' + errors.length + ' 筆</b><br>' + errors.slice(0, 12).map(escapeHtml).join('<br>');
     if (errors.length > 12) html += '<br>…另有 ' + (errors.length - 12) + ' 筆問題';
@@ -1149,6 +1165,7 @@ document.querySelectorAll('.overlay').forEach(o => {
 document.getElementById('f-date').value = currentDate;
 document.getElementById('f-date').addEventListener('change', e => setDate(e.target.value));
 updateDateBadge();
+document.getElementById('st-cap').textContent = TOTAL_SEATS;
 
 buildSeating();
 if (FIREBASE_CONFIG) {
