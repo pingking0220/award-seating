@@ -141,6 +141,10 @@ body.norole .write-tool{display:none}
 .mem-role.mem-cou{background:var(--cou-bg);color:var(--cou-tx)}
 .mem-row button{font-size:12px;padding:4px 11px;border-radius:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;font-family:inherit;flex-shrink:0}
 .mem-row button:hover{background:#F4D9D5;border-color:#C0392B;color:#C0392B}
+.hist-row{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:13.5px}
+.hist-meta{flex:1;line-height:1.5}
+.hist-row button{flex-shrink:0;font-size:13px;padding:6px 14px;border-radius:8px;border:1px solid var(--sel);background:var(--sel);color:#fff;cursor:pointer;font-family:inherit}
+.hist-row button:hover{opacity:.9}
 
 @media (max-width:720px){
   header{padding:12px 14px;gap:8px}
@@ -171,6 +175,7 @@ body.norole .write-tool{display:none}
   <button class="tool-btn write-tool" id="btn-delmode" onclick="toggleDelMode()">框選刪除</button>
   <button class="tool-btn write-tool" onclick="showClearAll()">全部刪除</button>
   <button class="tool-btn write-tool" onclick="showImport()">匯入名單</button>
+  <button class="tool-btn write-tool" onclick="showHistory()">復原</button>
   <button class="tool-btn" onclick="exportCSV()">匯出 CSV</button>
   <button class="tool-btn" onclick="window.print()">列印</button>
   <button class="tool-btn" id="btn-members" style="display:none" onclick="showMembers()">成員管理</button>
@@ -274,6 +279,15 @@ body.norole .write-tool{display:none}
   </div>
 </div></div>
 
+<div class="overlay" id="history-overlay"><div class="modal" style="width:min(520px,100%)">
+  <h2>復原座位（<span id="history-date"></span>）</h2>
+  <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:12px">
+    系統會在每次「刪除／覆蓋」座位前自動存檔（最多保留最近 20 步）。選一個時間點即可還原。<br><b id="history-scope" style="color:var(--ink)"></b>
+  </div>
+  <div id="history-list" style="max-height:46vh;overflow-y:auto"></div>
+  <div class="modal-btns" style="margin-top:14px"><button onclick="closeHistory()">關閉</button></div>
+</div></div>
+
 <div class="overlay" id="members-overlay"><div class="modal" style="width:min(560px,100%)">
   <h2>成員管理（指派處室身分）</h2>
   <div style="font-size:13.5px;color:var(--muted);line-height:1.8;margin-bottom:12px">
@@ -354,6 +368,8 @@ const REMOVED_SEATS = new Set([
   '14-0-0', '14-0-1', '14-0-2', '14-0-3'  // 第15排 左1~左4
 ]);
 const TOTAL_SEATS = ROWS * ZONES.reduce((a, b) => a + b, 0) - REMOVED_SEATS.size;
+const HISTORY_LIMIT = 20;   // 每個日期保留最近幾步可復原的快照（只在刪除／覆蓋前存檔）
+const LS_HIST = 'award_history_v1';
 const DEPT_META = {
   edu: { label: '教務處', bg: 'var(--edu-bg)', bd: 'var(--edu-bd)', tx: 'var(--edu-tx)' },
   stu: { label: '學務處', bg: 'var(--stu-bg)', bd: 'var(--stu-bd)', tx: 'var(--stu-tx)' },
@@ -375,7 +391,8 @@ let db = null;
 
 const SCHOOL_DOMAIN = 'lsps.tp.edu.tw';
 const ADMIN_LABEL = 'it@' + SCHOOL_DOMAIN;
-let auth = null, rolesRef = null;
+let auth = null, rolesRef = null, histRef = null;
+let historyCache = {};
 let myRole = null, myEmail = '', myEmailKey = '';
 let seatsAttached = false;
 function emailToKey(e) { return String(e || '').toLowerCase().replace(/\./g, ','); }
@@ -407,6 +424,7 @@ function initCloud() {
     auth = firebase.auth();
     db = firebase.database().ref('award_seats');
     rolesRef = firebase.database().ref('roles');
+    histRef = firebase.database().ref('history');
     auth.onAuthStateChanged(handleAuth, e => console.error(e));
   } catch (e) {
     console.error('Firebase 初始化失敗', e);
@@ -495,9 +513,12 @@ function writeErrMsg(err) {
   if (s.toLowerCase().indexOf('permission') >= 0) return '權限不足：你只能編輯自己處室的座位';
   return '寫入失敗：' + ((err && err.code) || '請稍後再試');
 }
-function persist(dateKey, updates, okMsg) {
+function persist(dateKey, updates, okMsg, action) {
   const keys = Object.keys(updates);
   if (!keys.length) return;
+  const cur = allData[dateKey] || {};
+  const destructive = keys.some(k => updates[k] === null || cur[k] != null);
+  if (destructive) snapshotBeforeChange(dateKey, action || '座位異動');
   if (db) {
     const payload = {};
     keys.forEach(k => payload[dateKey + '/' + k] = updates[k]);
@@ -569,6 +590,134 @@ function chooseMyDept(d) {
     applyRole();
     showToast('已設定你的處室為「' + DEPT_META[d].label + '」');
   }).catch(err => showToast(writeErrMsg(err)));
+}
+
+/* ---------- 復原（誤刪回復）：刪除／覆蓋前自動存快照 ---------- */
+function snapshotBeforeChange(dateKey, action) {
+  const cur = allData[dateKey] || {};
+  if (!Object.keys(cur).length) return;               // 沒有資料可遺失就不存
+  const snap = JSON.parse(JSON.stringify(cur));
+  saveHistory(dateKey, snap, action || '座位異動');
+}
+function saveHistory(date, seatsSnap, action) {
+  const entry = { ts: (db ? firebase.database.ServerValue.TIMESTAMP : Date.now()), by: myEmail || '單機', role: myRole || '', action: action, seats: seatsSnap || {} };
+  if (db && histRef) {
+    histRef.child(date).push(entry).then(() => pruneHistory(date)).catch(e => console.error('存歷史失敗', e));
+  } else {
+    try {
+      const all = JSON.parse(localStorage.getItem(LS_HIST) || '{}');
+      if (!all[date]) all[date] = [];
+      all[date].push(entry);
+      while (all[date].length > HISTORY_LIMIT) all[date].shift();
+      localStorage.setItem(LS_HIST, JSON.stringify(all));
+    } catch (e) {}
+  }
+}
+function pruneHistory(date) {
+  histRef.child(date).once('value').then(s => {
+    const v = s.val() || {};
+    const keys = Object.keys(v).sort();               // push id 依時間遞增
+    const excess = keys.length - HISTORY_LIMIT;
+    if (excess > 0) {
+      const rm = {};
+      for (let i = 0; i < excess; i++) rm[keys[i]] = null;
+      histRef.child(date).update(rm).catch(() => {});
+    }
+  }).catch(() => {});
+}
+function formatTs(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  const p = n => String(n).padStart(2, '0');
+  return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+function showHistory() {
+  const scope = document.getElementById('history-scope');
+  scope.textContent = isAdmin() ? '你是管理者，復原會還原整個日期的座位表。'
+    : (myRole ? '你會還原「' + DEPT_META[myRole].label + '」的座位，其他處室不受影響。' : '你尚未指派處室，無法復原。');
+  if (db && histRef) {
+    histRef.child(currentDate).once('value').then(s => { renderHistoryList(s.val() || {}); document.getElementById('history-overlay').classList.add('show'); })
+      .catch(() => showToast('讀取復原紀錄失敗'));
+  } else {
+    const all = JSON.parse(localStorage.getItem(LS_HIST) || '{}');
+    const arr = all[currentDate] || [];
+    const obj = {}; arr.forEach((e, i) => obj['i' + i] = e);
+    renderHistoryList(obj);
+    document.getElementById('history-overlay').classList.add('show');
+  }
+}
+function closeHistory() { document.getElementById('history-overlay').classList.remove('show'); }
+function renderHistoryList(map) {
+  historyCache = map;
+  document.getElementById('history-date').textContent = currentDate;
+  const entries = Object.keys(map).map(id => Object.assign({ id: id }, map[id]));
+  entries.sort((a, b) => (b.ts || 0) - (a.ts || 0));   // 最新在上
+  const cont = document.getElementById('history-list');
+  if (!entries.length) {
+    cont.innerHTML = '<div style="color:var(--muted);padding:12px 4px;line-height:1.7">這個日期目前沒有可復原的紀錄。<br>系統會在每次「刪除／覆蓋」座位前自動存檔，最多保留最近 ' + HISTORY_LIMIT + ' 步。</div>';
+    return;
+  }
+  let html = '';
+  entries.forEach(e => {
+    const cnt = e.seats ? Object.keys(e.seats).length : 0;
+    const who = (e.by || '').split('@')[0];
+    html += '<div class="hist-row"><div class="hist-meta"><b>' + escapeHtml(formatTs(e.ts)) + '</b>　' + escapeHtml(e.action || '異動')
+      + '<br><span style="color:var(--muted)">操作者：' + escapeHtml(who || '—') + '　當時 ' + cnt + ' 個座位有資料</span></div>'
+      + '<button onclick="doRestore(\'' + e.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')">復原到這裡</button></div>';
+  });
+  cont.innerHTML = html;
+}
+function doRestore(id) {
+  const entry = historyCache[id];
+  if (!entry) return;
+  const snapSeats = entry.seats || {};
+  const cur = allData[currentDate] || {};
+  const payload = {};
+  let willWrite = 0, skipOther = 0;
+  if (isAdmin()) {
+    const allKeys = new Set(Object.keys(cur).concat(Object.keys(snapSeats)));
+    allKeys.forEach(k => {
+      if (REMOVED_SEATS.has(k)) return;
+      const want = snapSeats[k] || null;
+      const now = cur[k] || null;
+      if (JSON.stringify(want) !== JSON.stringify(now)) { payload[k] = want; willWrite++; }
+    });
+  } else {
+    const role = myRole;
+    if (!role) { showToast('你的帳號尚未指派處室，無法復原'); return; }
+    Object.keys(snapSeats).forEach(k => {
+      if (REMOVED_SEATS.has(k) || snapSeats[k].dept !== role) return;
+      const now = cur[k];
+      if (now && now.dept !== role) { skipOther++; return; }          // 現在是別處室的，不能覆蓋
+      if (JSON.stringify(now || null) !== JSON.stringify(snapSeats[k])) { payload[k] = snapSeats[k]; willWrite++; }
+    });
+    Object.keys(cur).forEach(k => {
+      if (cur[k].dept !== role) return;
+      if (!(snapSeats[k] && snapSeats[k].dept === role)) { payload[k] = null; willWrite++; }   // 當時沒有、現在有 → 刪掉
+    });
+  }
+  if (!willWrite) { showToast('目前狀態已與該快照相同，無需復原'); closeHistory(); return; }
+  let msg = '確定要復原到「' + formatTs(entry.ts) + '　' + (entry.action || '') + '」嗎？\n\n';
+  msg += isAdmin() ? ('這會把 ' + currentDate + ' 整個座位表還原成當時的狀態（影響 ' + willWrite + ' 個座位）。')
+    : ('這會把你（' + DEPT_META[myRole].label + '）的座位還原成當時的狀態（' + willWrite + ' 個座位）' + (skipOther ? '；有 ' + skipOther + ' 個座位現已被其他處室預約，將略過。' : '。'));
+  msg += '\n\n（復原前會自動再存一份目前狀態，按錯還能再還原回來。）';
+  if (!confirm(msg)) return;
+  snapshotBeforeChange(currentDate, '復原前自動備份');
+  if (db) {
+    const dbPayload = {};
+    Object.keys(payload).forEach(k => dbPayload[currentDate + '/' + k] = payload[k]);
+    db.update(dbPayload).then(() => showToast('已復原 ' + willWrite + ' 個座位' + (skipOther ? '，略過 ' + skipOther + ' 個' : '')))
+      .catch(err => { showToast(writeErrMsg(err)); renderAll(); });
+  } else {
+    Object.keys(payload).forEach(k => { if (payload[k] === null) { if (allData[currentDate]) delete allData[currentDate][k]; } else { if (!allData[currentDate]) allData[currentDate] = {}; allData[currentDate][k] = payload[k]; } });
+    if (allData[currentDate] && !Object.keys(allData[currentDate]).length) delete allData[currentDate];
+    try { localStorage.setItem(LS_KEY, JSON.stringify(allData)); } catch (e) {}
+    seats = allData[currentDate] || {};
+    renderAll();
+    showToast('已復原 ' + willWrite + ' 個座位' + (skipOther ? '，略過 ' + skipOther + ' 個' : ''));
+  }
+  closeHistory();
 }
 
 /* ---------- 單機模式（未設定 Firebase 時的退路） ---------- */
@@ -873,7 +1022,7 @@ function confirmBook() {
     const updates = {}; let n = 0;
     pendingSeats.forEach(k => { if (seats[k] && (isAdmin() || seats[k].dept === currentDept)) { updates[k] = null; n++; } });
     closeModal();
-    persist(currentDate, updates, '已刪除 ' + n + ' 個座位的預約');
+    persist(currentDate, updates, '已刪除 ' + n + ' 個座位的預約', '框選刪除');
     return;
   }
   const award = document.getElementById('f-award').value.trim();
@@ -900,14 +1049,14 @@ function clearDept() {
   const updates = {}; let n = 0;
   Object.keys(seats).forEach(k => { if (seats[k].dept === currentDept) { updates[k] = null; n++; } });
   closeClearAll();
-  persist(currentDate, updates, '已刪除 ' + DEPT_META[currentDept].label + ' 全部 ' + n + ' 席');
+  persist(currentDate, updates, '已刪除 ' + DEPT_META[currentDept].label + ' 全部 ' + n + ' 席', '刪除本處室全部');
 }
 function clearEverything() {
   if (!isAdmin()) { showToast('只有管理者能刪除所有處室座位'); return; }
   const updates = {}; Object.keys(seats).forEach(k => updates[k] = null);
   const n = Object.keys(updates).length;
   closeClearAll();
-  persist(currentDate, updates, '已刪除本日期全部 ' + n + ' 席');
+  persist(currentDate, updates, '已刪除本日期全部 ' + n + ' 席', '刪除所有處室');
 }
 
 /* ---------- 查看與解除 ---------- */
@@ -947,7 +1096,7 @@ function confirmRelease() {
   if (!releaseSeatKey) return;
   const k = releaseSeatKey;
   closeRelease();
-  persist(currentDate, { [k]: null }, '座位預約已解除');
+  persist(currentDate, { [k]: null }, '座位預約已解除', '解除預約');
 }
 
 function saveSeatEdit() {
@@ -958,7 +1107,7 @@ function saveSeatEdit() {
   const award = document.getElementById('edit-award').value.trim();
   const name = document.getElementById('edit-name').value.trim();
   closeRelease();
-  persist(currentDate, { [k]: { dept: d.dept, award: award, name: name } }, '已更新座位內容');
+  persist(currentDate, { [k]: { dept: d.dept, award: award, name: name } }, '已更新座位內容', '編輯座位內容');
 }
 
 /* ---------- 匯出 ---------- */
@@ -1158,6 +1307,9 @@ function applyImport() {
     msg += '\n\n確定要繼續覆蓋嗎？';
     if (!confirm(msg)) return;
   }
+  const owDates = {};
+  importQueue.forEach(q => { if (q.overwrite) owDates[q.date] = true; });
+  Object.keys(owDates).forEach(d => snapshotBeforeChange(d, '匯入覆蓋'));
   const dates = {};
   const n = importQueue.length;
   if (db) {
@@ -1191,7 +1343,7 @@ function showToast(msg) {
 }
 
 document.querySelectorAll('.overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) { closeModal(); closeRelease(); closeClearAll(); closeImport(); closeMembers(); closeDeptPick(); } });
+  o.addEventListener('click', e => { if (e.target === o) { closeModal(); closeRelease(); closeClearAll(); closeImport(); closeMembers(); closeDeptPick(); closeHistory(); } });
 });
 
 document.getElementById('f-date').value = currentDate;

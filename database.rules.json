@@ -21,6 +21,12 @@
           "$other": { ".validate": false }
         }
       }
+    },
+    "history": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw')",
+      "$date": {
+        ".write": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw')"
+      }
     }
   }
 }
