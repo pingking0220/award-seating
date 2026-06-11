@@ -111,6 +111,12 @@ body.norole .write-tool{display:none}
 #role-banner.admin{background:var(--edu-bg);color:var(--edu-tx)}
 #role-banner.dept{background:var(--stu-bg);color:var(--stu-tx)}
 #role-banner.none{background:var(--cou-bg);color:var(--cou-tx)}
+#role-banner button{margin-left:10px;font-family:inherit;font-size:13px;font-weight:500;padding:4px 14px;border-radius:7px;border:1px solid currentColor;background:rgba(255,255,255,.5);color:inherit;cursor:pointer}
+.dept-pick-btn{font-family:inherit;font-size:16px;font-weight:700;padding:15px;border-radius:10px;border:2px solid;cursor:pointer;transition:transform .1s}
+.dept-pick-btn:active{transform:scale(.98)}
+.dpb-edu{background:var(--edu-bg);color:var(--edu-tx);border-color:var(--edu-bd)}
+.dpb-stu{background:var(--stu-bg);color:var(--stu-tx);border-color:var(--stu-bd)}
+.dpb-cou{background:var(--cou-bg);color:var(--cou-tx);border-color:var(--cou-bd)}
 
 #login-gate{position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,#EEEDFE,#E1F5EE);display:flex;align-items:center;justify-content:center;padding:20px}
 .login-card{background:var(--panel);border-radius:18px;padding:40px 36px;box-shadow:0 16px 50px rgba(0,0,0,.15);text-align:center;max-width:380px;width:100%}
@@ -273,6 +279,22 @@ body.norole .write-tool{display:none}
   </div>
 </div></div>
 
+<div class="overlay" id="deptpick-overlay"><div class="modal" style="width:min(440px,100%);text-align:center">
+  <h2>歡迎！請選擇你的處室</h2>
+  <div style="font-size:14px;color:var(--muted);line-height:1.9;margin:6px 0 20px">
+    選擇你所屬的處室後，即可開始預約該處室的座位。<br>
+    <b style="color:var(--cou-tx)">請謹慎選擇：選定後若需變更，須由管理者修改。</b>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <button class="dept-pick-btn dpb-edu" onclick="chooseMyDept('edu')">教務處</button>
+    <button class="dept-pick-btn dpb-stu" onclick="chooseMyDept('stu')">學務處</button>
+    <button class="dept-pick-btn dpb-cou" onclick="chooseMyDept('cou')">輔導室</button>
+  </div>
+  <div class="modal-btns" style="margin-top:18px;justify-content:center">
+    <button onclick="closeDeptPick()">稍後再選（先檢視）</button>
+  </div>
+</div></div>
+
 <div id="login-gate">
   <div class="login-card">
     <div class="login-logo">🏆</div>
@@ -399,6 +421,7 @@ function onSignedIn(user) {
   updateUserPill(user);
   applyRole();
   attachSeats();
+  if (!myRole && !isAdmin()) showDeptPick();
 }
 
 function attachSeats() {
@@ -438,8 +461,8 @@ function applyRole() {
   document.body.classList.toggle('norole', !myRole && !isAdmin());
   const banner = document.getElementById('role-banner');
   if (isAdmin()) { banner.className = 'admin'; banner.textContent = '管理者身分：可編輯所有處室座位，並可在「成員管理」指派同仁的處室。'; }
-  else if (myRole) { banner.className = 'dept'; banner.textContent = '你的身分：' + DEPT_META[myRole].label + '，只能預約／刪除本處室座位。'; }
-  else { banner.className = 'none'; banner.textContent = '你的帳號尚未被指派處室，目前只能檢視座位表。請聯絡管理者（' + ADMIN_LABEL + '）為你指派。'; }
+  else if (myRole) { banner.className = 'dept'; banner.textContent = '你的身分：' + DEPT_META[myRole].label + '，只能預約／刪除本處室座位。如需變更處室請洽管理者（' + ADMIN_LABEL + '）。'; }
+  else { banner.className = 'none'; banner.innerHTML = '你還沒有選擇處室，目前只能檢視座位表。<button onclick="showDeptPick()">選擇我的處室</button>'; }
   banner.style.display = '';
 }
 
@@ -504,6 +527,25 @@ function addMember() {
 }
 function removeMember(key) {
   rolesRef.child(key).remove().then(() => { showMembers(); showToast('已移除'); }).catch(err => showToast(writeErrMsg(err)));
+}
+
+/* ---------- 首次登入自選處室（之後變更須由管理者） ---------- */
+function showDeptPick() {
+  if (myRole || isAdmin()) return;
+  document.getElementById('deptpick-overlay').classList.add('show');
+}
+function closeDeptPick() { document.getElementById('deptpick-overlay').classList.remove('show'); }
+function chooseMyDept(d) {
+  if (!DEPT_META[d]) return;
+  if (myRole) { showToast('你已經有處室身分了，如需變更請洽管理者'); closeDeptPick(); return; }
+  if (!confirm('確定選擇「' + DEPT_META[d].label + '」嗎？\n選定後若要變更，須由管理者修改。')) return;
+  rolesRef.child(myEmailKey).set(d).then(() => {
+    myRole = d;
+    closeDeptPick();
+    updateUserPill({ email: myEmail });
+    applyRole();
+    showToast('已設定你的處室為「' + DEPT_META[d].label + '」');
+  }).catch(err => showToast(writeErrMsg(err)));
 }
 
 /* ---------- 單機模式（未設定 Firebase 時的退路） ---------- */
@@ -1064,7 +1106,7 @@ function showToast(msg) {
 }
 
 document.querySelectorAll('.overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) { closeModal(); closeRelease(); closeClearAll(); closeImport(); closeMembers(); } });
+  o.addEventListener('click', e => { if (e.target === o) { closeModal(); closeRelease(); closeClearAll(); closeImport(); closeMembers(); closeDeptPick(); } });
 });
 
 document.getElementById('f-date').value = currentDate;

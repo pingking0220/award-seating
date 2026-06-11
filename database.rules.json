@@ -5,6 +5,7 @@
       ".write": "auth != null && auth.token.email != null && root.child('roles').child(auth.token.email.toLowerCase().replace('.', ',')).val() == 'admin'",
       "$ek": {
         ".read": "auth != null && auth.token.email != null && $ek == auth.token.email.toLowerCase().replace('.', ',')",
+        ".write": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw') && $ek == auth.token.email.toLowerCase().replace('.', ',') && !data.exists() && (newData.val() == 'edu' || newData.val() == 'stu' || newData.val() == 'cou')",
         ".validate": "newData.val() == 'edu' || newData.val() == 'stu' || newData.val() == 'cou' || newData.val() == 'admin'"
       }
     },
