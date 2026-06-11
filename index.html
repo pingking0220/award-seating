@@ -100,6 +100,37 @@ body.delmode #seating-outer{border-color:#C0392B}
 #date-badge.past{background:var(--line);color:var(--muted)}
 .danger-opt{background:#C0392B !important;color:#fff !important;border-color:#C0392B !important}
 
+#user-pill{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:3px 4px 3px 12px}
+#user-pill #user-role{font-weight:700;color:var(--ink)}
+#user-pill button{font-size:11px;padding:4px 11px;border-radius:99px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;font-family:inherit}
+#user-pill button:hover{background:var(--line)}
+.dept-btn:disabled{cursor:not-allowed}
+.dept-btn.locked{opacity:.3}
+body.norole .write-tool{display:none}
+#role-banner{margin-bottom:14px;padding:10px 16px;border-radius:10px;font-size:13.5px;line-height:1.6}
+#role-banner.admin{background:var(--edu-bg);color:var(--edu-tx)}
+#role-banner.dept{background:var(--stu-bg);color:var(--stu-tx)}
+#role-banner.none{background:var(--cou-bg);color:var(--cou-tx)}
+
+#login-gate{position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,#EEEDFE,#E1F5EE);display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:var(--panel);border-radius:18px;padding:40px 36px;box-shadow:0 16px 50px rgba(0,0,0,.15);text-align:center;max-width:380px;width:100%}
+.login-logo{font-size:46px;margin-bottom:10px}
+.login-title{font-size:20px;font-weight:700;margin-bottom:10px}
+.login-sub{font-size:14px;color:var(--muted);line-height:1.9;margin-bottom:26px}
+#btn-login{font-family:inherit;font-size:15px;font-weight:500;padding:12px 26px;border-radius:10px;border:1px solid var(--sel);background:var(--sel);color:#fff;cursor:pointer;box-shadow:0 2px 6px rgba(55,138,221,.3)}
+#btn-login:hover{opacity:.92}
+#btn-login:active{transform:scale(.98)}
+#login-msg{margin-top:16px;font-size:13px;color:#C0392B;min-height:18px;line-height:1.5}
+.mem-row{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--line);font-size:13.5px}
+.mem-email{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mem-role{font-weight:700;padding:2px 10px;border-radius:99px;font-size:12px;flex-shrink:0}
+.mem-role.mem-admin{background:var(--ink);color:#fff}
+.mem-role.mem-edu{background:var(--edu-bg);color:var(--edu-tx)}
+.mem-role.mem-stu{background:var(--stu-bg);color:var(--stu-tx)}
+.mem-role.mem-cou{background:var(--cou-bg);color:var(--cou-tx)}
+.mem-row button{font-size:12px;padding:4px 11px;border-radius:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;font-family:inherit;flex-shrink:0}
+.mem-row button:hover{background:#F4D9D5;border-color:#C0392B;color:#C0392B}
+
 @media (max-width:720px){
   header{padding:12px 14px;gap:8px}
   main{padding:14px 10px 50px}
@@ -122,17 +153,20 @@ body.delmode #seating-outer{border-color:#C0392B}
 <header>
   <h1>頒獎典禮座位預約<small>視聽教室 4＋7＋4 × 15 排</small></h1>
   <span id="sync-pill"><span id="sync-dot"></span><span id="sync-text">單機模式</span></span>
+  <span id="user-pill" style="display:none"><span id="user-email"></span><span id="user-role"></span><button id="btn-logout" onclick="signOutUser()">登出</button></span>
   <button class="dept-btn active" id="dept-edu" onclick="setDept('edu')">教務處</button>
   <button class="dept-btn" id="dept-stu" onclick="setDept('stu')">學務處</button>
   <button class="dept-btn" id="dept-cou" onclick="setDept('cou')">輔導室</button>
-  <button class="tool-btn" id="btn-delmode" onclick="toggleDelMode()">框選刪除</button>
-  <button class="tool-btn" onclick="showClearAll()">全部刪除</button>
-  <button class="tool-btn" onclick="showImport()">匯入名單</button>
+  <button class="tool-btn write-tool" id="btn-delmode" onclick="toggleDelMode()">框選刪除</button>
+  <button class="tool-btn write-tool" onclick="showClearAll()">全部刪除</button>
+  <button class="tool-btn write-tool" onclick="showImport()">匯入名單</button>
   <button class="tool-btn" onclick="exportCSV()">匯出 CSV</button>
   <button class="tool-btn" onclick="window.print()">列印</button>
+  <button class="tool-btn" id="btn-members" style="display:none" onclick="showMembers()">成員管理</button>
 </header>
 
 <main>
+  <div id="role-banner" style="display:none"></div>
   <div id="fields">
     <div class="field">
       <label>典禮日期（場次）<span id="date-badge"></span></label>
@@ -196,7 +230,7 @@ body.delmode #seating-outer{border-color:#C0392B}
   <div id="clear-info" style="font-size:14.5px;line-height:1.9;margin-bottom:18px">請選擇刪除範圍（僅影響 <b id="clear-date"></b> 的座位表）：</div>
   <div class="modal-btns" style="flex-direction:column;align-items:stretch;gap:8px">
     <button onclick="clearDept()">刪除本處室全部座位（<span id="clear-dept-name"></span>）</button>
-    <button class="danger-opt" onclick="clearEverything()">刪除所有處室全部座位</button>
+    <button class="danger-opt" id="btn-clear-everything" onclick="clearEverything()">刪除所有處室全部座位</button>
     <button onclick="closeClearAll()">取消</button>
   </div>
 </div></div>
@@ -217,6 +251,37 @@ body.delmode #seating-outer{border-color:#C0392B}
     <button id="btn-import-confirm" onclick="applyImport()" style="background:var(--sel);color:#fff;border-color:var(--sel);display:none">確認匯入</button>
   </div>
 </div></div>
+
+<div class="overlay" id="members-overlay"><div class="modal" style="width:min(560px,100%)">
+  <h2>成員管理（指派處室身分）</h2>
+  <div style="font-size:13.5px;color:var(--muted);line-height:1.8;margin-bottom:12px">
+    指派每個 Google 帳號屬於哪個處室。被指派者登入後即以該處室身分編輯；「管理者」可編輯所有處室並管理本名單。
+  </div>
+  <div id="members-list" style="margin-bottom:14px"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:14px">
+    <input id="mem-email" type="email" placeholder="someone@lsps.tp.edu.tw" style="flex:1;min-width:200px;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit">
+    <select id="mem-role" style="font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit">
+      <option value="edu">教務處</option>
+      <option value="stu">學務處</option>
+      <option value="cou">輔導室</option>
+      <option value="admin">管理者</option>
+    </select>
+    <button class="tool-btn" onclick="addMember()" style="background:var(--sel);color:#fff;border-color:var(--sel)">新增／更新</button>
+  </div>
+  <div class="modal-btns" style="margin-top:16px">
+    <button onclick="closeMembers()">關閉</button>
+  </div>
+</div></div>
+
+<div id="login-gate">
+  <div class="login-card">
+    <div class="login-logo">🏆</div>
+    <div class="login-title">頒獎典禮座位預約系統</div>
+    <div class="login-sub">請使用學校 Google 帳號登入<br><b>@lsps.tp.edu.tw</b></div>
+    <button id="btn-login" onclick="signIn()">使用 Google 帳號登入</button>
+    <div id="login-msg"></div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
@@ -263,6 +328,15 @@ let pendingSeats = [];
 let releaseSeatKey = null;
 let db = null;
 
+const SCHOOL_DOMAIN = 'lsps.tp.edu.tw';
+const ADMIN_LABEL = 'it@' + SCHOOL_DOMAIN;
+let auth = null, rolesRef = null;
+let myRole = null, myEmail = '', myEmailKey = '';
+let seatsAttached = false;
+function emailToKey(e) { return String(e || '').toLowerCase().replace(/\./g, ','); }
+function isAdmin() { return myRole === 'admin'; }
+function canEditDept(d) { return isAdmin() || myRole === d; }
+
 function todayStr() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -279,39 +353,168 @@ function normalizeData(raw) {
   return raw;
 }
 
-/* ---------- 儲存層 ---------- */
-function initStorage() {
-  if (FIREBASE_CONFIG) {
-    try {
-      firebase.initializeApp(FIREBASE_CONFIG);
-      db = firebase.database().ref('award_seats');
-      db.on('value', snap => {
-        allData = normalizeData(snap.val());
-        seats = allData[currentDate] || {};
-        renderAll();
-        setSync(true);
-      }, () => setSync(false));
-      return;
-    } catch (e) { console.error('Firebase 初始化失敗', e); }
+/* ---------- 雲端 + 登入 ---------- */
+function initCloud() {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    auth = firebase.auth();
+    db = firebase.database().ref('award_seats');
+    rolesRef = firebase.database().ref('roles');
+    auth.onAuthStateChanged(handleAuth, e => console.error(e));
+  } catch (e) {
+    console.error('Firebase 初始化失敗', e);
+    initStorage();
   }
+}
+
+function signIn() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ hd: SCHOOL_DOMAIN, prompt: 'select_account' });
+  document.getElementById('login-msg').textContent = '';
+  auth.signInWithPopup(provider).catch(err => {
+    document.getElementById('login-msg').textContent = '登入失敗：' + (err.code || err.message || '');
+  });
+}
+function signOutUser() { if (auth) auth.signOut(); }
+
+function handleAuth(user) {
+  if (!user) { myRole = null; myEmail = ''; detachSeats(); showLoginGate(); setSync(false); updateUserPill(null); return; }
+  myEmail = (user.email || '').toLowerCase();
+  if (!myEmail.endsWith('@' + SCHOOL_DOMAIN)) {
+    document.getElementById('login-msg').textContent = '請使用學校帳號（@' + SCHOOL_DOMAIN + '）登入，此帳號不適用。';
+    auth.signOut();
+    return;
+  }
+  myEmailKey = emailToKey(myEmail);
+  rolesRef.child(myEmailKey).once('value')
+    .then(snap => { myRole = snap.val() || null; onSignedIn(user); })
+    .catch(() => { myRole = null; onSignedIn(user); });
+}
+
+function onSignedIn(user) {
+  hideLoginGate();
+  setSync(true);
+  updateUserPill(user);
+  applyRole();
+  attachSeats();
+}
+
+function attachSeats() {
+  if (!db || seatsAttached) return;
+  seatsAttached = true;
+  db.on('value', snap => {
+    allData = normalizeData(snap.val());
+    seats = allData[currentDate] || {};
+    renderAll();
+  }, err => { console.error(err); showToast('讀取資料失敗：' + (err.code || '')); });
+}
+function detachSeats() {
+  if (db && seatsAttached) { db.off(); seatsAttached = false; }
+  allData = {}; seats = {};
+}
+
+function showLoginGate() { document.getElementById('login-gate').style.display = 'flex'; }
+function hideLoginGate() { document.getElementById('login-gate').style.display = 'none'; }
+
+function updateUserPill(user) {
+  const pill = document.getElementById('user-pill');
+  if (!user) { pill.style.display = 'none'; return; }
+  document.getElementById('user-email').textContent = myEmail;
+  document.getElementById('user-role').textContent = isAdmin() ? '管理者' : (myRole ? DEPT_META[myRole].label : '未指派');
+  pill.style.display = '';
+}
+
+function applyRole() {
+  ['edu', 'stu', 'cou'].forEach(d => {
+    const btn = document.getElementById('dept-' + d);
+    if (isAdmin() || myRole === d) { btn.style.display = ''; btn.disabled = false; btn.classList.remove('locked'); }
+    else if (myRole) { btn.style.display = 'none'; }
+    else { btn.style.display = ''; btn.disabled = true; btn.classList.add('locked'); }
+  });
+  if (!isAdmin() && myRole && DEPT_META[myRole]) setDept(myRole, true);
+  document.getElementById('btn-members').style.display = isAdmin() ? '' : 'none';
+  document.body.classList.toggle('norole', !myRole && !isAdmin());
+  const banner = document.getElementById('role-banner');
+  if (isAdmin()) { banner.className = 'admin'; banner.textContent = '管理者身分：可編輯所有處室座位，並可在「成員管理」指派同仁的處室。'; }
+  else if (myRole) { banner.className = 'dept'; banner.textContent = '你的身分：' + DEPT_META[myRole].label + '，只能預約／刪除本處室座位。'; }
+  else { banner.className = 'none'; banner.textContent = '你的帳號尚未被指派處室，目前只能檢視座位表。請聯絡管理者（' + ADMIN_LABEL + '）為你指派。'; }
+  banner.style.display = '';
+}
+
+/* ---------- 寫入（依規則做精準寫入；失敗時回復畫面） ---------- */
+function writeErrMsg(err) {
+  const s = String((err && err.message) || err || '');
+  if (s.toLowerCase().indexOf('permission') >= 0) return '權限不足：你只能編輯自己處室的座位';
+  return '寫入失敗：' + ((err && err.code) || '請稍後再試');
+}
+function persist(dateKey, updates, okMsg) {
+  const keys = Object.keys(updates);
+  if (!keys.length) return;
+  if (db) {
+    const payload = {};
+    keys.forEach(k => payload[dateKey + '/' + k] = updates[k]);
+    db.update(payload).then(() => { if (okMsg) showToast(okMsg); }).catch(err => { showToast(writeErrMsg(err)); renderAll(); });
+  } else {
+    keys.forEach(k => {
+      if (updates[k] === null) { if (allData[dateKey]) delete allData[dateKey][k]; }
+      else { if (!allData[dateKey]) allData[dateKey] = {}; allData[dateKey][k] = updates[k]; }
+    });
+    if (allData[dateKey] && !Object.keys(allData[dateKey]).length) delete allData[dateKey];
+    try { localStorage.setItem(LS_KEY, JSON.stringify(allData)); } catch (e) {}
+    seats = allData[dateKey] || {};
+    renderAll();
+    if (okMsg) showToast(okMsg);
+  }
+}
+
+/* ---------- 成員管理（僅管理者） ---------- */
+function showMembers() {
+  if (!isAdmin()) return;
+  rolesRef.once('value').then(snap => {
+    renderMembers(snap.val() || {});
+    document.getElementById('members-overlay').classList.add('show');
+  }).catch(err => showToast(writeErrMsg(err)));
+}
+function closeMembers() { document.getElementById('members-overlay').classList.remove('show'); }
+function renderMembers(map) {
+  const order = { admin: 0, edu: 1, stu: 2, cou: 3 };
+  const rows = Object.keys(map).map(k => ({ key: k, email: k.replace(/,/g, '.'), role: map[k] }));
+  rows.sort((a, b) => (order[a.role] - order[b.role]) || a.email.localeCompare(b.email));
+  const roleLabel = r => r === 'admin' ? '管理者' : (DEPT_META[r] ? DEPT_META[r].label : r);
+  let html = rows.length ? '' : '<div style="color:var(--muted);padding:8px 4px">尚無成員，請於下方新增。</div>';
+  rows.forEach(r => {
+    html += '<div class="mem-row"><span class="mem-email">' + escapeHtml(r.email) + '</span>'
+      + '<span class="mem-role mem-' + r.role + '">' + roleLabel(r.role) + '</span>'
+      + '<button onclick="removeMember(\'' + r.key.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')">移除</button></div>';
+  });
+  document.getElementById('members-list').innerHTML = html;
+}
+function addMember() {
+  const email = document.getElementById('mem-email').value.trim().toLowerCase();
+  const role = document.getElementById('mem-role').value;
+  if (!email || email.indexOf('@') < 0) { showToast('請輸入正確的 email'); return; }
+  if (!email.endsWith('@' + SCHOOL_DOMAIN)) { showToast('僅能加入 @' + SCHOOL_DOMAIN + ' 帳號'); return; }
+  rolesRef.child(emailToKey(email)).set(role).then(() => {
+    document.getElementById('mem-email').value = '';
+    showMembers();
+    showToast('已設定 ' + email + '：' + (role === 'admin' ? '管理者' : DEPT_META[role].label));
+  }).catch(err => showToast(writeErrMsg(err)));
+}
+function removeMember(key) {
+  rolesRef.child(key).remove().then(() => { showMembers(); showToast('已移除'); }).catch(err => showToast(writeErrMsg(err)));
+}
+
+/* ---------- 單機模式（未設定 Firebase 時的退路） ---------- */
+function initStorage() {
+  hideLoginGate();
   try {
     const v2 = localStorage.getItem(LS_KEY);
-    if (v2) {
-      allData = normalizeData(JSON.parse(v2));
-    } else {
-      const v1 = localStorage.getItem(LS_KEY_OLD);
-      allData = v1 ? normalizeData(JSON.parse(v1)) : {};
-    }
+    if (v2) { allData = normalizeData(JSON.parse(v2)); }
+    else { const v1 = localStorage.getItem(LS_KEY_OLD); allData = v1 ? normalizeData(JSON.parse(v1)) : {}; }
   } catch (e) { allData = {}; }
   seats = allData[currentDate] || {};
   renderAll();
   setSync(false);
-}
-function saveData() {
-  if (!Object.keys(seats).length) { delete allData[currentDate]; }
-  else { allData[currentDate] = seats; }
-  if (db) { db.set(allData); return; }
-  try { localStorage.setItem(LS_KEY, JSON.stringify(allData)); } catch (e) {}
 }
 function setSync(online) {
   const pill = document.getElementById('sync-pill');
@@ -320,7 +523,11 @@ function setSync(online) {
 }
 
 /* ---------- 介面 ---------- */
-function setDept(d) {
+function setDept(d, force) {
+  if (!force && !canEditDept(d)) {
+    showToast(myRole ? ('你的身分是「' + DEPT_META[myRole].label + '」，無法切換到其他處室') : '你的帳號尚未指派處室');
+    return;
+  }
   currentDept = d;
   document.querySelectorAll('.dept-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('dept-' + d).classList.add('active');
@@ -590,57 +797,44 @@ function closeModal() {
 
 function confirmBook() {
   if (modalMode === 'delete') {
-    let n = 0;
-    pendingSeats.forEach(k => {
-      if (seats[k] && seats[k].dept === currentDept) { delete seats[k]; renderSeat(k); n++; }
-    });
-    updateStatus();
-    saveData();
+    const updates = {}; let n = 0;
+    pendingSeats.forEach(k => { if (seats[k] && (isAdmin() || seats[k].dept === currentDept)) { updates[k] = null; n++; } });
     closeModal();
-    showToast('已刪除 ' + n + ' 個座位的預約');
+    persist(currentDate, updates, '已刪除 ' + n + ' 個座位的預約');
     return;
   }
   const award = document.getElementById('f-award').value.trim();
   const name = document.getElementById('f-name').value.trim();
-  let conflict = 0;
-  pendingSeats.forEach(k => {
-    if (seats[k]) { conflict++; return; }
-    seats[k] = { dept: currentDept, award: award, name: name };
-    renderSeat(k);
-  });
-  updateStatus();
-  saveData();
-  const n = pendingSeats.length - conflict;
+  const updates = {}; let conflict = 0;
+  pendingSeats.forEach(k => { if (seats[k]) { conflict++; } else { updates[k] = { dept: currentDept, award: award, name: name }; } });
+  const n = Object.keys(updates).length;
   closeModal();
-  showToast(conflict > 0 ? '已預約 ' + n + ' 席，' + conflict + ' 席已被其他處室搶先' : '已成功預約 ' + n + ' 個座位');
+  if (!n) { showToast(conflict ? '所選座位都已被預約' : '未選取座位'); return; }
+  persist(currentDate, updates, conflict > 0 ? ('已預約 ' + n + ' 席，' + conflict + ' 席已被搶先') : ('已成功預約 ' + n + ' 個座位'));
 }
 
 /* ---------- 全部刪除 ---------- */
 function showClearAll() {
   document.getElementById('clear-date').textContent = currentDate;
   document.getElementById('clear-dept-name').textContent = DEPT_META[currentDept].label;
+  document.getElementById('btn-clear-everything').style.display = isAdmin() ? '' : 'none';
   document.getElementById('clear-overlay').classList.add('show');
 }
 function closeClearAll() {
   document.getElementById('clear-overlay').classList.remove('show');
 }
 function clearDept() {
-  let n = 0;
-  Object.keys(seats).forEach(k => {
-    if (seats[k].dept === currentDept) { delete seats[k]; renderSeat(k); n++; }
-  });
-  updateStatus();
-  saveData();
+  const updates = {}; let n = 0;
+  Object.keys(seats).forEach(k => { if (seats[k].dept === currentDept) { updates[k] = null; n++; } });
   closeClearAll();
-  showToast('已刪除 ' + DEPT_META[currentDept].label + ' 全部 ' + n + ' 席');
+  persist(currentDate, updates, '已刪除 ' + DEPT_META[currentDept].label + ' 全部 ' + n + ' 席');
 }
 function clearEverything() {
-  const n = Object.keys(seats).length;
-  Object.keys(seats).forEach(k => { delete seats[k]; renderSeat(k); });
-  updateStatus();
-  saveData();
+  if (!isAdmin()) { showToast('只有管理者能刪除所有處室座位'); return; }
+  const updates = {}; Object.keys(seats).forEach(k => updates[k] = null);
+  const n = Object.keys(updates).length;
   closeClearAll();
-  showToast('已刪除本日期全部 ' + n + ' 席');
+  persist(currentDate, updates, '已刪除本日期全部 ' + n + ' 席');
 }
 
 /* ---------- 查看與解除 ---------- */
@@ -653,7 +847,7 @@ function showRelease(key) {
   let info = '<b>第 ' + (r + 1) + ' 排 ' + ZONE_NAMES[z] + '區 第 ' + (s + 1) + ' 座</b><br>處室：' + m.label;
   if (d.award) info += '<br>獎項：' + escapeHtml(d.award);
   if (d.name) info += '<br>姓名：' + escapeHtml(d.name);
-  const own = d.dept === currentDept;
+  const own = isAdmin() || d.dept === currentDept;
   if (!own) info += '<br><span style="color:#C0392B">此座位屬於其他處室，僅供查看</span>';
   document.getElementById('release-info').innerHTML = info;
   document.getElementById('btn-release-confirm').style.display = own ? '' : 'none';
@@ -667,12 +861,9 @@ function closeRelease() {
 
 function confirmRelease() {
   if (!releaseSeatKey) return;
-  delete seats[releaseSeatKey];
-  renderSeat(releaseSeatKey);
-  updateStatus();
-  saveData();
+  const k = releaseSeatKey;
   closeRelease();
-  showToast('座位預約已解除');
+  persist(currentDate, { [k]: null }, '座位預約已解除');
 }
 
 /* ---------- 匯出 ---------- */
@@ -807,6 +998,10 @@ function parseImportRows(rows) {
     if (!(s >= 1 && s <= ZONE_CAP[rZone])) { errors.push('第 ' + line + ' 列：' + rZone + '區座號須為 1～' + ZONE_CAP[rZone] + '（' + rSeat + '）'); return; }
     const dept = DEPT_BY_LABEL[rDept];
     if (!dept) { errors.push('第 ' + line + ' 列：處室須為 教務處／學務處／輔導室（' + rDept + '）'); return; }
+    if (!isAdmin() && dept !== myRole) {
+      errors.push('第 ' + line + ' 列：你' + (myRole ? '只能匯入本處室（' + DEPT_META[myRole].label + '）座位' : '尚未被指派處室，無法匯入') + '（此列為 ' + rDept + '）');
+      return;
+    }
 
     const z = ZONE_NAMES.indexOf(rZone);
     const key = seatKey(r - 1, z, s - 1);
@@ -835,18 +1030,22 @@ function parseImportRows(rows) {
 
 function applyImport() {
   const dates = {};
-  importQueue.forEach(q => {
-    if (!allData[q.date]) allData[q.date] = {};
-    allData[q.date][q.key] = q.data;
-    dates[q.date] = true;
-  });
   const n = importQueue.length;
-  seats = allData[currentDate] || {};
-  renderAll();
-  saveData();
-  closeImport();
-  const dateList = Object.keys(dates).sort();
-  showToast('已匯入 ' + n + ' 筆（' + dateList.join('、') + '）');
+  if (db) {
+    const payload = {};
+    importQueue.forEach(q => { payload[q.date + '/' + q.key] = q.data; dates[q.date] = true; });
+    closeImport();
+    db.update(payload).then(() => {
+      showToast('已匯入 ' + n + ' 筆（' + Object.keys(dates).sort().join('、') + '）');
+    }).catch(err => showToast(writeErrMsg(err)));
+  } else {
+    importQueue.forEach(q => { if (!allData[q.date]) allData[q.date] = {}; allData[q.date][q.key] = q.data; dates[q.date] = true; });
+    seats = allData[currentDate] || {};
+    renderAll();
+    try { localStorage.setItem(LS_KEY, JSON.stringify(allData)); } catch (e) {}
+    closeImport();
+    showToast('已匯入 ' + n + ' 筆（' + Object.keys(dates).sort().join('、') + '）');
+  }
 }
 
 /* ---------- 其他 ---------- */
@@ -863,7 +1062,7 @@ function showToast(msg) {
 }
 
 document.querySelectorAll('.overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) { closeModal(); closeRelease(); closeClearAll(); closeImport(); } });
+  o.addEventListener('click', e => { if (e.target === o) { closeModal(); closeRelease(); closeClearAll(); closeImport(); closeMembers(); } });
 });
 
 document.getElementById('f-date').value = currentDate;
@@ -874,16 +1073,17 @@ buildSeating();
 if (FIREBASE_CONFIG) {
   const scripts = [
     'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js',
     'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js'
   ];
-  let loaded = 0;
-  scripts.forEach(src => {
+  (function loadSeq(i) {
+    if (i >= scripts.length) { initCloud(); return; }
     const s = document.createElement('script');
-    s.src = src;
-    s.onload = () => { if (++loaded === scripts.length) initStorage(); };
-    s.onerror = () => initStorage();
+    s.src = scripts[i];
+    s.onload = () => loadSeq(i + 1);
+    s.onerror = () => document.getElementById('login-msg').textContent = '元件載入失敗，請檢查網路連線後重新整理。';
     document.head.appendChild(s);
-  });
+  })(0);
 } else {
   initStorage();
 }
