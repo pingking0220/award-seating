@@ -417,6 +417,20 @@ function normalizeData(raw) {
   return raw;
 }
 
+function findStudentAwards(studentName) {
+  if (!studentName) return [];
+  const awards = [];
+  Object.keys(allData).forEach(date => {
+    Object.keys(allData[date]).forEach(key => {
+      const d = allData[date][key];
+      if (d && d.name === studentName) {
+        awards.push({ date: date, key: key, award: d.award, dept: d.dept });
+      }
+    });
+  });
+  return awards;
+}
+
 /* ---------- 雲端 + 登入 ---------- */
 function initCloud() {
   try {
@@ -1004,6 +1018,17 @@ function showModal() {
     if (award) lines.push('<b>獎項：</b>' + escapeHtml(award));
     if (name) lines.push('<b>姓名：</b>' + escapeHtml(name));
     lines.push('<b>共選取：</b>' + pendingSeats.length + ' 個座位');
+
+    if (name) {
+      const existing = findStudentAwards(name);
+      if (existing.length > 0) {
+        lines.push('<br><b style="color:#C0392B">⚠ 注意：此學生已獲其他獎項：</b>');
+        existing.forEach(e => {
+          lines.push('<span style="color:#C0392B;font-size:12.5px">- ' + escapeHtml(e.date + ' ' + DEPT_META[e.dept].label + ' ' + (e.award || '無獎項名稱')) + '</span>');
+        });
+      }
+    }
+
     document.getElementById('summary').innerHTML = lines.join('<br>');
     btn.textContent = '確認預約';
     btn.style.background = 'var(--sel)';
@@ -1106,6 +1131,17 @@ function saveSeatEdit() {
   if (!d) { closeRelease(); return; }
   const award = document.getElementById('edit-award').value.trim();
   const name = document.getElementById('edit-name').value.trim();
+  
+  if (name && name !== d.name) {
+    const existing = findStudentAwards(name);
+    if (existing.length > 0) {
+      const msg = '注意：學生「' + name + '」已獲得其他獎項：\n' + 
+                  existing.map(e => e.date + ' ' + DEPT_META[e.dept].label + ' ' + (e.award || '無獎項')).join('\n') + 
+                  '\n\n確定要儲存變更嗎？';
+      if (!confirm(msg)) return;
+    }
+  }
+
   closeRelease();
   persist(currentDate, { [k]: { dept: d.dept, award: award, name: name } }, '已更新座位內容', '編輯座位內容');
 }
@@ -1272,12 +1308,37 @@ function parseImportRows(rows) {
   const box = document.getElementById('import-result');
   const owList = importQueue.filter(q => q.overwrite);
   const newCount = importQueue.length - owList.length;
+
+  // 檢查重複得獎
+  const duplicateWarnings = [];
+  const nameToCount = {};
+  importQueue.forEach(q => {
+    if (q.data.name) {
+      if (!nameToCount[q.data.name]) nameToCount[q.data.name] = 0;
+      nameToCount[q.data.name]++;
+    }
+  });
+  Object.keys(nameToCount).forEach(name => {
+    const existing = findStudentAwards(name);
+    // 排除被這次匯入覆蓋的既有獎項
+    const existingNotOverwritten = existing.filter(e => {
+      return !importQueue.some(q => q.date === e.date && q.key === e.key);
+    });
+    const totalAwards = nameToCount[name] + existingNotOverwritten.length;
+    if (totalAwards > 1) {
+      duplicateWarnings.push(escapeHtml(name) + ' (' + totalAwards + '個獎項)');
+    }
+  });
+
   let html;
   if (!importQueue.length && sameCount && !errors.length) {
     html = '<b style="color:#3B6D11">檔案內 ' + sameCount + ' 筆座位都與目前相同，沒有需要變更的項目。</b>';
   } else {
     html = '<b style="color:' + (importQueue.length ? '#3B6D11' : '#C0392B') + '">可匯入：' + importQueue.length + ' 筆（新增 ' + newCount + '、更新 ' + owList.length + '）</b>';
     if (sameCount) html += '<br><span style="color:var(--muted)">另有 ' + sameCount + ' 筆與現況相同，將自動略過（不需確認）。</span>';
+    if (duplicateWarnings.length > 0) {
+      html += '<br><b style="color:#C0392B">⚠ 注意：以下學生有重複得獎情況：</b><br><span style="color:#C0392B;font-size:12.5px">' + duplicateWarnings.join('、') + '</span>';
+    }
     if (owList.length) {
       html += '<br><b style="color:#B26B00">⚠ 內容有變動、將覆蓋的座位（按「確認匯入」後會再請你確認一次）：</b><br>'
         + owList.slice(0, 10).map(q => escapeHtml(q.label + '：' + seatDataText(q.old) + ' → ' + seatDataText(q.data))).join('<br>');
