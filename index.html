@@ -177,7 +177,8 @@ body.norole .write-tool{display:none}
   <button class="tool-btn write-tool" onclick="showImport()">匯入名單</button>
   <button class="tool-btn write-tool" onclick="showHistory()">復原</button>
   <button class="tool-btn" onclick="exportCSV()">匯出 CSV</button>
-  <button class="tool-btn" onclick="window.print()">列印</button>
+  <button class="tool-btn" onclick="printSlips()">列印通知單</button>
+  <button class="tool-btn" onclick="window.print()">列印場地圖</button>
   <button class="tool-btn" id="btn-members" style="display:none" onclick="showMembers()">成員管理</button>
 </header>
 
@@ -187,6 +188,10 @@ body.norole .write-tool{display:none}
     <div class="field">
       <label>典禮日期（場次）<span id="date-badge"></span></label>
       <input id="f-date" type="date">
+    </div>
+    <div class="field">
+      <label>班級（選填）</label>
+      <input id="f-class" type="text" placeholder="例：101" maxlength="20">
     </div>
     <div class="field">
       <label>獎項名稱（選填）</label>
@@ -236,6 +241,10 @@ body.norole .write-tool{display:none}
   <h2 id="release-title">座位資料</h2>
   <div id="release-info"></div>
   <div id="release-edit" style="display:none;margin-top:12px">
+    <div class="field" style="margin-bottom:10px">
+      <label>班級</label>
+      <input id="edit-class" type="text" maxlength="20" placeholder="例：101">
+    </div>
     <div class="field" style="margin-bottom:10px">
       <label>獎項名稱</label>
       <input id="edit-award" type="text" maxlength="40" placeholder="例：閱讀楷模一年級">
@@ -982,6 +991,7 @@ function addDragListeners() {
 /* ---------- 確認預約 ---------- */
 function showModal() {
   modalMode = delMode ? 'delete' : 'book';
+  const classNo = document.getElementById('f-class').value.trim();
   const award = document.getElementById('f-award').value.trim();
   const name = document.getElementById('f-name').value.trim();
   pendingSeats = selecting.slice();
@@ -1015,6 +1025,7 @@ function showModal() {
   } else {
     document.getElementById('modal-title').textContent = '確認預約 — ' + m.label;
     const lines = ['<b>日期：</b>' + currentDate, '<b>處室：</b>' + m.label];
+    if (classNo) lines.push('<b>班級：</b>' + escapeHtml(classNo));
     if (award) lines.push('<b>獎項：</b>' + escapeHtml(award));
     if (name) lines.push('<b>姓名：</b>' + escapeHtml(name));
     lines.push('<b>共選取：</b>' + pendingSeats.length + ' 個座位');
@@ -1050,10 +1061,11 @@ function confirmBook() {
     persist(currentDate, updates, '已刪除 ' + n + ' 個座位的預約', '框選刪除');
     return;
   }
+  const classNo = document.getElementById('f-class').value.trim();
   const award = document.getElementById('f-award').value.trim();
   const name = document.getElementById('f-name').value.trim();
   const updates = {}; let conflict = 0;
-  pendingSeats.forEach(k => { if (seats[k]) { conflict++; } else { updates[k] = { dept: currentDept, award: award, name: name }; } });
+  pendingSeats.forEach(k => { if (seats[k]) { conflict++; } else { updates[k] = { dept: currentDept, classNo: classNo, award: award, name: name }; } });
   const n = Object.keys(updates).length;
   closeModal();
   if (!n) { showToast(conflict ? '所選座位都已被預約' : '未選取座位'); return; }
@@ -1096,11 +1108,13 @@ function showRelease(key) {
   const edit = document.getElementById('release-edit');
   if (own) {
     document.getElementById('release-title').textContent = '編輯座位 — ' + m.label;
+    document.getElementById('edit-class').value = d.classNo || '';
     document.getElementById('edit-award').value = d.award || '';
     document.getElementById('edit-name').value = d.name || '';
     edit.style.display = '';
   } else {
     document.getElementById('release-title').textContent = '座位資料 — ' + m.label;
+    if (d.classNo) info += '<br>班級：' + escapeHtml(d.classNo);
     if (d.award) info += '<br>獎項：' + escapeHtml(d.award);
     if (d.name) info += '<br>姓名：' + escapeHtml(d.name);
     info += '<br><span style="color:#C0392B">此座位屬於其他處室，僅供查看</span>';
@@ -1129,6 +1143,7 @@ function saveSeatEdit() {
   const k = releaseSeatKey;
   const d = seats[k];
   if (!d) { closeRelease(); return; }
+  const classNo = document.getElementById('edit-class').value.trim();
   const award = document.getElementById('edit-award').value.trim();
   const name = document.getElementById('edit-name').value.trim();
   
@@ -1143,18 +1158,18 @@ function saveSeatEdit() {
   }
 
   closeRelease();
-  persist(currentDate, { [k]: { dept: d.dept, award: award, name: name } }, '已更新座位內容', '編輯座位內容');
+  persist(currentDate, { [k]: { dept: d.dept, classNo: classNo, award: award, name: name } }, '已更新座位內容', '編輯座位內容');
 }
 
 /* ---------- 匯出 ---------- */
 function exportCSV() {
-  const rows = [['日期', '排', '區', '座號', '處室', '獎項', '姓名']];
+  const rows = [['日期', '排', '區', '座號', '處室', '班級', '獎項', '姓名']];
   for (let r = 0; r < ROWS; r++) ZONES.forEach((cnt, z) => {
     for (let s = 0; s < cnt; s++) {
       const k = seatKey(r, z, s);
       if (seats[k]) {
         const d = seats[k];
-        rows.push([currentDate, r + 1, ZONE_NAMES[z], s + 1, DEPT_META[d.dept].label, d.award || '', d.name || '']);
+        rows.push([currentDate, r + 1, ZONE_NAMES[z], s + 1, DEPT_META[d.dept].label, d.classNo || '', d.award || '', d.name || '']);
       }
     }
   });
@@ -1195,13 +1210,13 @@ function closeImport() {
 function downloadTemplate() {
   loadXLSX(() => {
     const rows = [
-      ['日期', '排', '區', '座號', '處室', '獎項', '姓名'],
-      [currentDate, 1, '中', 1, '教務處', '閱讀楷模一年級', '王小明'],
-      [currentDate, 1, '中', 2, '教務處', '閱讀楷模二年級', ''],
-      ['', 2, '左', 1, '學務處', '', ''],
+      ['日期', '排', '區', '座號', '處室', '班級', '獎項', '姓名'],
+      [currentDate, 1, '中', 1, '教務處', '101', '閱讀楷模一年級', '王小明'],
+      [currentDate, 1, '中', 2, '教務處', '102', '閱讀楷模二年級', ''],
+      ['', 2, '左', 1, '學務處', '', '', ''],
     ];
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [{ wch: 12 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 10 }, { wch: 20 }, { wch: 12 }];
+    ws['!cols'] = [{ wch: 12 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 10 }, { wch: 10 }, { wch: 20 }, { wch: 12 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '座位名單');
     XLSX.writeFile(wb, '頒獎座位匯入模板.xlsx');
@@ -1249,7 +1264,7 @@ function handleImportFile(input) {
 }
 
 function sameSeat(a, b) {
-  return !!a && !!b && a.dept === b.dept && (a.award || '') === (b.award || '') && (a.name || '') === (b.name || '');
+  return !!a && !!b && a.dept === b.dept && (a.classNo || '') === (b.classNo || '') && (a.award || '') === (b.award || '') && (a.name || '') === (b.name || '');
 }
 
 function parseImportRows(rows) {
@@ -1265,6 +1280,7 @@ function parseImportRows(rows) {
     const rZone = get(['區']);
     const rSeat = get(['座號', '座']);
     const rDept = get(['處室']);
+    const classNo = get(['班級', '班級座號']).slice(0, 20);
     const award = get(['獎項', '獎項名稱']).slice(0, 20);
     const name = get(['姓名', '得獎者姓名']).slice(0, 20);
 
@@ -1300,7 +1316,7 @@ function parseImportRows(rows) {
       errors.push('第 ' + line + ' 列：' + date + ' 第' + r + '排 ' + rZone + s + ' 已被 ' + DEPT_META[existing.dept].label + ' 預約，不可覆蓋（不同處室）');
       return;
     }
-    const newData = { dept: dept, award: award, name: name };
+    const newData = { dept: dept, classNo: classNo, award: award, name: name };
     if (existing && sameSeat(existing, newData)) { sameCount++; return; }   // 內容完全相同 → 略過，不需確認
     importQueue.push({ date: date, key: key, data: newData, label: date + ' 第' + r + '排 ' + rZone + s, overwrite: !!existing, old: existing || null });
   });
@@ -1356,8 +1372,8 @@ function parseImportRows(rows) {
 
 function seatDataText(d) {
   if (!d) return '（空白）';
-  const t = [d.award, d.name].filter(Boolean).join('・');
-  return t || '（未填獎項／姓名）';
+  const t = [d.classNo, d.award, d.name].filter(Boolean).join('・');
+  return t || '（未填班級／獎項／姓名）';
 }
 
 function applyImport() {
@@ -1402,6 +1418,77 @@ function applyImport() {
     closeImport();
     showToast('已匯入 ' + n + ' 筆（' + Object.keys(dates).sort().join('、') + '）');
   }
+}
+
+/* ---------- 列印通知單 ---------- */
+function printSlips() {
+  const slips = [];
+  for (let r = 0; r < ROWS; r++) {
+    ZONES.forEach((cnt, z) => {
+      for (let s = 0; s < cnt; s++) {
+        const k = seatKey(r, z, s);
+        const d = seats[k];
+        if (d && d.dept === currentDept) {
+          slips.push({ r: r + 1, z: ZONE_NAMES[z], s: s + 1, d: d });
+        }
+      }
+    });
+  }
+  
+  if (!slips.length) {
+    showToast('目前選擇的日期（' + currentDate + '），' + DEPT_META[currentDept].label + ' 沒有已預約的座位');
+    return;
+  }
+  
+  let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>頒獎通知單</title>';
+  html += '<style>';
+  html += 'body { font-family: "Noto Sans TC", sans-serif; margin: 0; padding: 0; background: #eee; }';
+  html += '.page { width: 210mm; min-height: 297mm; background: #fff; padding: 10mm; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 68mm; gap: 0mm; page-break-after: always; margin: 0 auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }';
+  html += '.slip-wrap { padding: 5mm; border-right: 1px dashed #ccc; border-bottom: 1px dashed #ccc; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; page-break-inside: avoid; }';
+  html += '.slip-wrap:nth-child(2n) { border-right: none; }';
+  html += '.slip-wrap:nth-last-child(1), .slip-wrap:nth-last-child(2):nth-child(odd) { border-bottom: none; }';
+  html += '.slip { border: 2px solid #333; border-radius: 8px; padding: 12px 16px; height: 100%; box-sizing: border-box; position: relative; }';
+  html += '.s-title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #ddd; }';
+  html += '.s-row { margin-bottom: 6px; font-size: 15px; display: flex; align-items: baseline; }';
+  html += '.s-row.seat-row { margin-top: 10px; font-size: 16px; font-weight: bold; color: #C0392B; background: #fff0f0; padding: 6px; border-radius: 4px; text-align: center; justify-content: center; border: 1px solid #f5c2c2; }';
+  html += '.s-lbl { width: 45px; color: #666; flex-shrink: 0; font-size: 13px; }';
+  html += '.s-val { flex-grow: 1; font-weight: bold; }';
+  html += '.s-footer { position: absolute; bottom: 8px; right: 12px; font-size: 11px; color: #999; }';
+  html += '@media print { body { background: #fff; } .page { padding: 0; margin: 0 auto; box-shadow: none; border: none; width: auto; min-height: auto; } @page { size: A4; margin: 8mm; } }';
+  html += '</style></head><body>';
+  
+  for (let i = 0; i < slips.length; i += 8) {
+    html += '<div class="page">';
+    const pageSlips = slips.slice(i, i + 8);
+    pageSlips.forEach(item => {
+      const classNo = item.d.classNo ? escapeHtml(item.d.classNo) : '（未填寫）';
+      const name = item.d.name ? escapeHtml(item.d.name) : '（未填寫）';
+      const award = item.d.award ? escapeHtml(item.d.award) : '（未填寫）';
+      
+      html += '<div class="slip-wrap"><div class="slip">';
+      html += '<div class="s-title">' + DEPT_META[currentDept].label + ' 頒獎通知單</div>';
+      html += '<div class="s-row"><div class="s-lbl">日期：</div><div class="s-val">' + currentDate + '</div></div>';
+      html += '<div class="s-row"><div class="s-lbl">班級：</div><div class="s-val">' + classNo + '</div></div>';
+      html += '<div class="s-row"><div class="s-lbl">姓名：</div><div class="s-val">' + name + '</div></div>';
+      html += '<div class="s-row"><div class="s-lbl">獎項：</div><div class="s-val">' + award + '</div></div>';
+      html += '<div class="s-row seat-row">座位：第 ' + item.r + ' 排 ' + item.z + '區 ' + item.s + ' 號</div>';
+      html += '<div class="s-footer">請依此通知單上之座位入座</div>';
+      html += '</div></div>';
+    });
+    const emptyCells = 8 - pageSlips.length;
+    for(let j = 0; j < emptyCells; j++) {
+      html += '<div class="slip-wrap" style="border-color: transparent;"></div>';
+    }
+    html += '</div>';
+  }
+  
+  html += '<script>setTimeout(function(){ window.print(); }, 800);</script>';
+  html += '</body></html>';
+  
+  const win = window.open('', '_blank');
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
 }
 
 /* ---------- 其他 ---------- */
