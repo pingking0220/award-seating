@@ -1428,7 +1428,7 @@ function printSlips() {
       for (let s = 0; s < cnt; s++) {
         const k = seatKey(r, z, s);
         const d = seats[k];
-        if (d && d.dept === currentDept) {
+        if (d && d.dept === currentDept && (d.name || d.award)) {   // 只印有填姓名或獎項的座位，略過尚未填寫的佔位
           slips.push({ r: r + 1, z: ZONE_NAMES[z], s: s + 1, d: d });
         }
       }
@@ -1436,7 +1436,7 @@ function printSlips() {
   }
   
   if (!slips.length) {
-    showToast('目前選擇的日期（' + currentDate + '），' + DEPT_META[currentDept].label + ' 沒有已預約的座位');
+    showToast(DEPT_META[currentDept].label + ' 在 ' + currentDate + ' 沒有可列印的通知單（需有填姓名或獎項的座位）');
     return;
   }
   
