@@ -18,6 +18,7 @@
           "dept": { ".validate": "newData.val() == 'edu' || newData.val() == 'stu' || newData.val() == 'cou'" },
           "award": { ".validate": "newData.isString() && newData.val().length <= 40" },
           "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "classNo": { ".validate": "newData.isString() && newData.val().length <= 20" },
           "$other": { ".validate": false }
         }
       }

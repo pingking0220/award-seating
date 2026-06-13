@@ -1486,6 +1486,7 @@ function printSlips() {
   html += '</body></html>';
   
   const win = window.open('', '_blank');
+  if (!win) { showToast('列印視窗被瀏覽器封鎖，請允許此網站的彈出視窗後再列印'); return; }
   win.document.open();
   win.document.write(html);
   win.document.close();
