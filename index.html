@@ -147,12 +147,20 @@ body.norole .write-tool{display:none}
 .hist-row button:hover{opacity:.9}
 
 #btn-overview.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-#overview-info{display:none;text-align:center;font-size:14px;color:var(--muted);margin-bottom:8px}
-body.overview #overview-info{display:block}
-body.overview #fields .field:not(:first-child),body.overview #hint,body.overview #role-banner{display:none !important}
-body.overview #fields{padding:8px 14px;margin-bottom:8px}
-body.overview main{padding-top:12px;padding-bottom:12px}
-body.overview #seating-outer{overflow:hidden}
+#overview-info{display:none;text-align:center;font-size:15px;color:var(--muted);margin-bottom:6px;padding:0 120px;line-height:36px}
+#overview-exit{display:none;position:fixed;top:10px;right:12px;z-index:40;padding:8px 18px;border-radius:8px;font-size:15px;font-weight:500;font-family:inherit;cursor:pointer;background:var(--ink);color:#fff;border:1px solid var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+/* 總覽模式：隱藏所有管理介面，只留座位圖與「返回編輯」，讓座位盡量放大 */
+body.overview #overview-info,body.overview #overview-exit{display:block}
+body.overview header,body.overview #fields,body.overview #role-banner,body.overview #legend,body.overview #status-bar{display:none !important}
+body.overview main{max-width:none;padding:10px 12px 0}
+body.overview #stage{margin-bottom:8px}
+body.overview #seating-outer{overflow:hidden;padding:10px 6px}
+body.overview .seat,body.overview .seat-gap{height:86px}
+body.overview .seat-dept{font-size:14.5px;max-width:82px}
+body.overview .seat-award{font-size:13.5px;max-width:82px;font-weight:500}
+body.overview .seat-name{font-size:14px;max-width:82px;font-weight:700;opacity:1}
+body.overview .seat-no{font-size:12px}
+body.overview .row-label{font-size:14px}
 
 @media (max-width:720px){
   header{padding:12px 14px;gap:8px}
@@ -215,6 +223,7 @@ body.overview #seating-outer{overflow:hidden}
   </div>
 
   <div id="overview-info"></div>
+  <button id="overview-exit" onclick="toggleOverview()">返回編輯</button>
   <div id="stage">講台</div>
 
   <div id="seating-outer">
@@ -962,8 +971,9 @@ function applyOverview() {
     if (r > maxR) maxR = r;
   });
   const info = document.getElementById('overview-info');
-  if (maxR < 0) { maxR = ROWS - 1; info.textContent = currentDate + ' 尚無預約，顯示全部座位'; }
-  else info.textContent = currentDate + '　顯示第 1～' + (maxR + 1) + ' 排（到最後一排有預約的座位）';
+  const cnt = ['edu', 'stu', 'cou'].map(d => DEPT_META[d].label + ' ' + Object.keys(seats).filter(k => seats[k] && seats[k].dept === d && !REMOVED_SEATS.has(k)).length).join('・');
+  if (maxR < 0) { maxR = ROWS - 1; info.textContent = currentDate + '　尚無預約，顯示全部座位'; }
+  else info.textContent = currentDate + '　第 1～' + (maxR + 1) + ' 排　' + cnt;
   document.querySelectorAll('#seating .row-wrap').forEach(row => {
     const r = +row.dataset.row;
     row.style.display = (r >= minR && r <= maxR) ? '' : 'none';
@@ -975,13 +985,15 @@ function fitOverview() {
   const outer = document.getElementById('seating-outer');
   wrap.style.zoom = 1;
   const natW = wrap.offsetWidth, natH = wrap.offsetHeight;
-  const availW = outer.clientWidth - 20;
-  const bottomUI = document.getElementById('legend').offsetHeight + document.getElementById('status-bar').offsetHeight + 70;
-  const availH = window.innerHeight - (outer.getBoundingClientRect().top + window.scrollY) - bottomUI;
-  const z = Math.max(0.3, Math.min(1.6, availW / natW, availH / natH));
+  const availW = outer.clientWidth - 16;
+  const availH = window.innerHeight - (outer.getBoundingClientRect().top + window.scrollY) - 34;
+  const z = Math.max(0.3, Math.min(3, availW / natW, availH / natH));
   wrap.style.zoom = z.toFixed(3);
 }
 window.addEventListener('resize', () => { if (overview) fitOverview(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && overview && !document.querySelector('.overlay.show')) toggleOverview();
+});
 
 function updateStatus() {
   const counts = { edu: 0, stu: 0, cou: 0 };

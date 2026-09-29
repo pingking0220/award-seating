@@ -160,7 +160,7 @@ with sync_playwright() as p:
 
     # 12 總覽模式
     page.mouse.move(5, 900); page.evaluate("toggleOverview()"); page.wait_for_timeout(300)
-    shot(page, "12-overview", [("#btn-overview", 1, "tl"), ("#overview-info", 2, "l")])
+    shot(page, "12-overview", [("#overview-exit", 1, "l"), ("#overview-info", 2, "l")])
     page.evaluate("toggleOverview()")
 
     # 13 成員管理（管理者）
