@@ -12,6 +12,7 @@
   --edu-bg:#EEEDFE; --edu-bd:#AFA9EC; --edu-tx:#3C3489;
   --stu-bg:#E1F5EE; --stu-bd:#5DCAA5; --stu-tx:#085041;
   --cou-bg:#FAEEDA; --cou-bd:#EF9F27; --cou-tx:#633806;
+  --kin-bg:#FBEAF0; --kin-bd:#E68AAE; --kin-tx:#7A1F47;
   --sel:#378ADD;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -26,6 +27,7 @@ header h1 small{font-size:12px;font-weight:400;color:var(--muted);margin-left:10
 #dept-edu{background:var(--edu-bg);color:var(--edu-tx)}
 #dept-stu{background:var(--stu-bg);color:var(--stu-tx)}
 #dept-cou{background:var(--cou-bg);color:var(--cou-tx)}
+#dept-kin{background:var(--kin-bg);color:var(--kin-tx)}
 .tool-btn{padding:8px 16px;border-radius:8px;font-size:14px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit}
 .tool-btn:hover{background:var(--bg)}
 
@@ -122,6 +124,7 @@ body.norole .write-tool{display:none}
 .dpb-edu{background:var(--edu-bg);color:var(--edu-tx);border-color:var(--edu-bd)}
 .dpb-stu{background:var(--stu-bg);color:var(--stu-tx);border-color:var(--stu-bd)}
 .dpb-cou{background:var(--cou-bg);color:var(--cou-tx);border-color:var(--cou-bd)}
+.dpb-kin{background:var(--kin-bg);color:var(--kin-tx);border-color:var(--kin-bd)}
 
 #login-gate{position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,#EEEDFE,#E1F5EE);display:flex;align-items:center;justify-content:center;padding:20px}
 .login-card{background:var(--panel);border-radius:18px;padding:40px 36px;box-shadow:0 16px 50px rgba(0,0,0,.15);text-align:center;max-width:380px;width:100%}
@@ -139,6 +142,7 @@ body.norole .write-tool{display:none}
 .mem-role.mem-edu{background:var(--edu-bg);color:var(--edu-tx)}
 .mem-role.mem-stu{background:var(--stu-bg);color:var(--stu-tx)}
 .mem-role.mem-cou{background:var(--cou-bg);color:var(--cou-tx)}
+.mem-role.mem-kin{background:var(--kin-bg);color:var(--kin-tx)}
 .mem-row button{font-size:12px;padding:4px 11px;border-radius:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;font-family:inherit;flex-shrink:0}
 .mem-row button:hover{background:#F4D9D5;border-color:#C0392B;color:#C0392B}
 .hist-row{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:13.5px}
@@ -188,6 +192,7 @@ body.overview .row-label{font-size:14px}
   <button class="dept-btn active" id="dept-edu" onclick="setDept('edu')">教務處</button>
   <button class="dept-btn" id="dept-stu" onclick="setDept('stu')">學務處</button>
   <button class="dept-btn" id="dept-cou" onclick="setDept('cou')">輔導室</button>
+  <button class="dept-btn" id="dept-kin" onclick="setDept('kin')">幼兒園</button>
   <button class="tool-btn write-tool" id="btn-delmode" onclick="toggleDelMode()">框選刪除</button>
   <button class="tool-btn write-tool" onclick="showClearAll()">全部刪除</button>
   <button class="tool-btn write-tool" onclick="showImport()">匯入名單</button>
@@ -236,6 +241,7 @@ body.overview .row-label{font-size:14px}
     <div class="leg"><div class="leg-dot" style="background:var(--edu-bg);border-color:var(--edu-bd)"></div>教務處</div>
     <div class="leg"><div class="leg-dot" style="background:var(--stu-bg);border-color:var(--stu-bd)"></div>學務處</div>
     <div class="leg"><div class="leg-dot" style="background:var(--cou-bg);border-color:var(--cou-bd)"></div>輔導室</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--kin-bg);border-color:var(--kin-bd)"></div>幼兒園</div>
     <div class="leg"><div class="leg-dot" style="outline:3px solid var(--sel);outline-offset:-3px"></div>框選中</div>
   </div>
 
@@ -243,6 +249,7 @@ body.overview .row-label{font-size:14px}
     <span>教務處：<b id="st-edu">0</b></span>
     <span>學務處：<b id="st-stu">0</b></span>
     <span>輔導室：<b id="st-cou">0</b></span>
+    <span>幼兒園：<b id="st-kin">0</b></span>
     <span>合計：<b id="st-total">0</b> / <span id="st-cap">225</span> 席</span>
   </div>
 </main>
@@ -329,6 +336,7 @@ body.overview .row-label{font-size:14px}
       <option value="edu">教務處</option>
       <option value="stu">學務處</option>
       <option value="cou">輔導室</option>
+      <option value="kin">幼兒園</option>
       <option value="admin">管理者</option>
     </select>
     <button class="tool-btn" onclick="addMember()" style="background:var(--sel);color:#fff;border-color:var(--sel)">新增／更新</button>
@@ -348,6 +356,7 @@ body.overview .row-label{font-size:14px}
     <button class="dept-pick-btn dpb-edu" onclick="chooseMyDept('edu')">教務處</button>
     <button class="dept-pick-btn dpb-stu" onclick="chooseMyDept('stu')">學務處</button>
     <button class="dept-pick-btn dpb-cou" onclick="chooseMyDept('cou')">輔導室</button>
+    <button class="dept-pick-btn dpb-kin" onclick="chooseMyDept('kin')">幼兒園</button>
   </div>
   <div class="modal-btns" style="margin-top:18px;justify-content:center">
     <button onclick="closeDeptPick()">稍後再選（先檢視）</button>
@@ -403,7 +412,8 @@ const LS_HIST = 'award_history_v1';
 const DEPT_META = {
   edu: { label: '教務處', bg: 'var(--edu-bg)', bd: 'var(--edu-bd)', tx: 'var(--edu-tx)' },
   stu: { label: '學務處', bg: 'var(--stu-bg)', bd: 'var(--stu-bd)', tx: 'var(--stu-tx)' },
-  cou: { label: '輔導室', bg: 'var(--cou-bg)', bd: 'var(--cou-bd)', tx: 'var(--cou-tx)' }
+  cou: { label: '輔導室', bg: 'var(--cou-bg)', bd: 'var(--cou-bd)', tx: 'var(--cou-tx)' },
+  kin: { label: '幼兒園', bg: 'var(--kin-bg)', bd: 'var(--kin-bd)', tx: 'var(--kin-tx)' }
 };
 const LS_KEY = 'award_seats_v2';
 const LS_KEY_OLD = 'award_seats_v1';
@@ -564,7 +574,7 @@ function updateUserPill(user) {
 }
 
 function applyRole() {
-  ['edu', 'stu', 'cou'].forEach(d => {
+  Object.keys(DEPT_META).forEach(d => {
     const btn = document.getElementById('dept-' + d);
     if (isAdmin() || myRole === d) { btn.style.display = ''; btn.disabled = false; btn.classList.remove('locked'); }
     else if (myRole) { btn.style.display = 'none'; }
@@ -619,7 +629,7 @@ function showMembers() {
 }
 function closeMembers() { document.getElementById('members-overlay').classList.remove('show'); }
 function renderMembers(map) {
-  const order = { admin: 0, edu: 1, stu: 2, cou: 3 };
+  const order = { admin: 0, edu: 1, stu: 2, cou: 3, kin: 4 };
   const rows = Object.keys(map).map(k => ({ key: k, email: k.replace(/,/g, '.'), role: map[k] }));
   rows.sort((a, b) => (order[a.role] - order[b.role]) || a.email.localeCompare(b.email));
   const roleLabel = r => r === 'admin' ? '管理者' : (DEPT_META[r] ? DEPT_META[r].label : r);
@@ -971,7 +981,7 @@ function applyOverview() {
     if (r > maxR) maxR = r;
   });
   const info = document.getElementById('overview-info');
-  const cnt = ['edu', 'stu', 'cou'].map(d => DEPT_META[d].label + ' ' + Object.keys(seats).filter(k => seats[k] && seats[k].dept === d && !REMOVED_SEATS.has(k)).length).join('・');
+  const cnt = Object.keys(DEPT_META).map(d => DEPT_META[d].label + ' ' + Object.keys(seats).filter(k => seats[k] && seats[k].dept === d && !REMOVED_SEATS.has(k)).length).join('・');
   if (maxR < 0) { maxR = ROWS - 1; info.textContent = currentDate + '　尚無預約，顯示全部座位'; }
   else info.textContent = currentDate + '　第 1～' + (maxR + 1) + ' 排　' + cnt;
   document.querySelectorAll('#seating .row-wrap').forEach(row => {
@@ -996,12 +1006,13 @@ document.addEventListener('keydown', e => {
 });
 
 function updateStatus() {
-  const counts = { edu: 0, stu: 0, cou: 0 };
+  const counts = { edu: 0, stu: 0, cou: 0, kin: 0 };
   Object.keys(seats).forEach(k => { const d = seats[k]; if (d && !REMOVED_SEATS.has(k) && counts[d.dept] !== undefined) counts[d.dept]++; });
   document.getElementById('st-edu').textContent = counts.edu;
   document.getElementById('st-stu').textContent = counts.stu;
   document.getElementById('st-cou').textContent = counts.cou;
-  document.getElementById('st-total').textContent = counts.edu + counts.stu + counts.cou;
+  document.getElementById('st-kin').textContent = counts.kin;
+  document.getElementById('st-total').textContent = counts.edu + counts.stu + counts.cou + counts.kin;
 }
 
 /* ---------- 點選與框選 ---------- */
@@ -1278,7 +1289,7 @@ function exportCSV() {
 
 /* ---------- 匯入名單 ---------- */
 const ZONE_CAP = { '左': 4, '中': 7, '右': 4 };
-const DEPT_BY_LABEL = { '教務處': 'edu', '學務處': 'stu', '輔導室': 'cou' };
+const DEPT_BY_LABEL = { '教務處': 'edu', '學務處': 'stu', '輔導室': 'cou', '幼兒園': 'kin' };
 let importQueue = [];
 let xlsxReady = false;
 
@@ -1394,7 +1405,7 @@ function parseImportRows(rows) {
     const s = parseInt(rSeat, 10);
     if (!(s >= 1 && s <= ZONE_CAP[rZone])) { errors.push('第 ' + line + ' 列：' + rZone + '區座號須為 1～' + ZONE_CAP[rZone] + '（' + rSeat + '）'); return; }
     const dept = DEPT_BY_LABEL[rDept];
-    if (!dept) { errors.push('第 ' + line + ' 列：處室須為 教務處／學務處／輔導室（' + rDept + '）'); return; }
+    if (!dept) { errors.push('第 ' + line + ' 列：處室須為 教務處／學務處／輔導室／幼兒園（' + rDept + '）'); return; }
     if (!isAdmin() && dept !== myRole) {
       errors.push('第 ' + line + ' 列：你' + (myRole ? '只能匯入本處室（' + DEPT_META[myRole].label + '）座位' : '尚未被指派處室，無法匯入') + '（此列為 ' + rDept + '）');
       return;

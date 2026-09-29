@@ -9,7 +9,7 @@
 <style>
 :root{
   --bg:#F7F6F3; --panel:#FFFFFF; --ink:#2B2B28; --muted:#6F6D66; --line:#E3E1DA;
-  --edu-bg:#EEEDFE; --edu-tx:#3C3489; --stu-bg:#E1F5EE; --stu-tx:#085041; --cou-bg:#FAEEDA; --cou-tx:#633806;
+  --edu-bg:#EEEDFE; --edu-tx:#3C3489; --stu-bg:#E1F5EE; --stu-tx:#085041; --cou-bg:#FAEEDA; --cou-tx:#633806; --kin-bg:#FBEAF0; --kin-tx:#7A1F47;
   --sel:#378ADD; --red:#DC2626;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -49,7 +49,7 @@ ol.steps li::before{counter-increment:s;content:counter(s);position:absolute;lef
 .btn.red{background:#C0392B;color:#fff;border-color:#C0392B}
 .btn.blue{background:var(--sel);color:#fff;border-color:var(--sel)}
 .dept{display:inline-block;padding:0 8px;border-radius:6px;font-size:14px;font-weight:700}
-.dept.edu{background:var(--edu-bg);color:var(--edu-tx)} .dept.stu{background:var(--stu-bg);color:var(--stu-tx)} .dept.cou{background:var(--cou-bg);color:var(--cou-tx)}
+.dept.edu{background:var(--edu-bg);color:var(--edu-tx)} .dept.stu{background:var(--stu-bg);color:var(--stu-tx)} .dept.cou{background:var(--cou-bg);color:var(--cou-tx)} .dept.kin{background:var(--kin-bg);color:var(--kin-tx)}
 table{border-collapse:collapse;width:100%;font-size:14.5px;margin:10px 0}
 th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
 th{background:var(--bg)}
@@ -73,7 +73,7 @@ details[open] summary{margin-bottom:6px}
 <body>
 
 <header><div class="in">
-  <h1>頒獎典禮座位預約系統　操作說明<small>力行國小・教務處／學務處／輔導室共用</small></h1>
+  <h1>頒獎典禮座位預約系統　操作說明<small>力行國小・教務處／學務處／輔導室／幼兒園共用</small></h1>
   <a class="go" href="./" target="_blank" rel="noopener">開啟預約系統 →</a>
 </div></header>
 
@@ -120,7 +120,7 @@ details[open] summary{margin-bottom:6px}
     <figure class="narrow"><a href="guide/02-deptpick.png" target="_blank"><img src="guide/02-deptpick.png" alt="選擇處室" loading="lazy"></a><figcaption>第一次登入的處室選擇</figcaption></figure>
     <div>
       <ul class="marks">
-        <li><span class="n">1</span>點選你的處室：<span class="dept edu">教務處</span> <span class="dept stu">學務處</span> <span class="dept cou">輔導室</span>，再按「確定」。</li>
+        <li><span class="n">1</span>點選你的處室：<span class="dept edu">教務處</span> <span class="dept stu">學務處</span> <span class="dept cou">輔導室</span> <span class="dept kin">幼兒園</span>，再按「確定」。</li>
         <li><span class="n">2</span>還不確定的話可以按「稍後再選」，先以<b>只能檢視</b>的身分看座位表。之後可點畫面上方黃色提示列的 <span class="btn">選擇我的處室</span> 再選。</li>
       </ul>
       <div class="warn">⚠ <b>選定後無法自行更改</b>。選錯了請聯絡管理者（it@lsps.tp.edu.tw）修改。</div>
@@ -134,13 +134,13 @@ details[open] summary{margin-bottom:6px}
   <figure><a href="guide/03-main.png" target="_blank"><img src="guide/03-main.png" alt="主畫面" loading="lazy"></a><figcaption>主畫面（以教務處身分為例，點圖可放大）</figcaption></figure>
   <ul class="marks">
     <li><span class="n">1</span><b>目前登入的帳號與身分</b>，旁邊是「登出」。</li>
-    <li><span class="n">2</span><b>你的處室</b>。一般同仁只會看到自己的處室；管理者可以在三個處室之間切換。</li>
+    <li><span class="n">2</span><b>你的處室</b>。一般同仁只會看到自己的處室；管理者可以在各處室之間切換。</li>
     <li><span class="n">3</span><b>編輯工具</b>：框選刪除、全部刪除、匯入名單、復原。</li>
     <li><span class="n">4</span><b>檢視與輸出</b>：匯出 CSV、列印通知單、列印場地圖、總覽模式、使用說明（就是這一頁）。</li>
     <li><span class="n">5</span><b>身分提示列</b>，說明你現在能做什麼。</li>
     <li><span class="n">6</span><b>典禮日期（場次）</b>。每個日期是一份獨立的座位表，可以選未來的日期提前預約。</li>
     <li><span class="n">7</span><b>班級、獎項、姓名</b>（都是選填）。預約<b>之前</b>先填好，這次選的座位都會套用這些資料。</li>
-    <li><span class="n">8</span><b>座位圖</b>：講台在上方，灰色是空位，有顏色的是已預約（<span class="dept edu">教務處</span> <span class="dept stu">學務處</span> <span class="dept cou">輔導室</span>）。</li>
+    <li><span class="n">8</span><b>座位圖</b>：講台在上方，灰色是空位，有顏色的是已預約（<span class="dept edu">教務處</span> <span class="dept stu">學務處</span> <span class="dept cou">輔導室</span> <span class="dept kin">幼兒園</span>）。</li>
     <li><span class="n">9</span><b>統計</b>：各處室已預約幾席、全場共幾席。</li>
   </ul>
   <div class="tip">💡 畫面是<b>即時同步</b>的：其他處室一預約，你的畫面就會自動出現，不用重新整理。</div>
@@ -231,7 +231,7 @@ details[open] summary{margin-bottom:6px}
     <tr><td>排</td><td>1～15</td><td>3</td></tr>
     <tr><td>區</td><td>左、中、右</td><td>中</td></tr>
     <tr><td>座號</td><td>左區、右區 1～4；中區 1～7</td><td>5</td></tr>
-    <tr><td>處室</td><td>教務處、學務處、輔導室（只能填自己的處室）</td><td>教務處</td></tr>
+    <tr><td>處室</td><td>教務處、學務處、輔導室、幼兒園（只能填自己的處室）</td><td>教務處</td></tr>
     <tr><td>班級／獎項／姓名</td><td>選填，獎項和姓名最多 40 字</td><td>301／模範生／王小明</td></tr>
   </table>
   <div class="tip">💡 <b>最省事的改法</b>：按 <span class="btn">匯出 CSV</span> 下載目前的座位表，用 Excel 修改幾筆後直接匯回來。沒改的列系統會自動略過，只更新有變動的座位。</div>

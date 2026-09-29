@@ -22,6 +22,7 @@ SAMPLE = """
   put('3-0-3','stu','303','模範生','周子涵'); put('4-0-1','stu','401','體育績優','劉宇軒');
   put('3-2-0','cou','501','孝親楷模','蔡依林'); put('3-2-1','cou','502','孝親楷模','鄭凱文');
   put('4-2-0','cou','503','','');
+  put('5-2-2','kin','大班','全勤獎','小芸'); put('5-2-3','kin','大班','全勤獎','小宇');
   allData = {}; allData[D] = S; seats = S; renderAll();
 })();
 """
@@ -166,7 +167,7 @@ with sync_playwright() as p:
     # 13 成員管理（管理者）
     as_role(page, "admin")
     page.evaluate("""() => { renderMembers({'it@lsps,tp,edu,tw':'admin','teacher-a@lsps,tp,edu,tw':'edu',
-        'teacher-b@lsps,tp,edu,tw':'stu','teacher-c@lsps,tp,edu,tw':'cou'});
+        'teacher-b@lsps,tp,edu,tw':'stu','teacher-c@lsps,tp,edu,tw':'cou','teacher-d@lsps,tp,edu,tw':'kin'});
         document.getElementById('members-overlay').classList.add('show'); }""")
     shot(page, "13-members", [("#members-list .mem-row:nth-child(2) button", 1, "tr"),
                               (["#mem-email", "#members-overlay .tool-btn"], 2, "tl")], clip="#members-overlay .modal")
