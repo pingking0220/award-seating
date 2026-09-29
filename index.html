@@ -165,7 +165,7 @@ body.overview #seating-outer{overflow:hidden}
   .row-label{width:30px;font-size:11px}
 }
 @media print{
-  header,#fields,#legend,#hint{display:none}
+  header,#fields,#legend,#hint,#role-banner,#overview-info{display:none !important}
   body{background:#fff}
   #seating-outer{border:none}
 }
@@ -189,6 +189,7 @@ body.overview #seating-outer{overflow:hidden}
   <button class="tool-btn" onclick="window.print()">列印場地圖</button>
   <button class="tool-btn" id="btn-overview" onclick="toggleOverview()">總覽模式</button>
   <button class="tool-btn" id="btn-members" style="display:none" onclick="showMembers()">成員管理</button>
+  <a class="tool-btn" id="btn-guide" href="guide.html" target="_blank" rel="noopener" style="text-decoration:none">❓ 使用說明</a>
 </header>
 
 <main>
@@ -351,6 +352,7 @@ body.overview #seating-outer{overflow:hidden}
     <div class="login-sub">請使用學校 Google 帳號登入<br><b>@lsps.tp.edu.tw</b></div>
     <button id="btn-login" onclick="signIn()">使用 Google 帳號登入</button>
     <div id="login-msg"></div>
+    <div style="margin-top:14px;font-size:13px"><a href="guide.html" target="_blank" rel="noopener" style="color:var(--muted)">第一次使用？看操作說明</a></div>
   </div>
 </div>
 
@@ -936,7 +938,7 @@ function renderAll() {
   if (overview) applyOverview();
 }
 
-/* ---------- 總覽模式：只顯示有人預約的排範圍，並縮放到一個畫面看完 ---------- */
+/* ---------- 總覽模式：從第 1 排顯示到最後一排有人預約的位置（看得出從第幾排開始坐），並縮放到一個畫面看完 ---------- */
 let overview = false;
 function toggleOverview() {
   overview = !overview;
@@ -952,16 +954,16 @@ function resetOverview() {
   document.getElementById('overview-info').textContent = '';
 }
 function applyOverview() {
-  let minR = ROWS, maxR = -1;
+  const minR = 0;
+  let maxR = -1;
   Object.keys(seats).forEach(k => {
     if (!seats[k] || REMOVED_SEATS.has(k)) return;
     const r = +k.split('-')[0];
-    if (r < minR) minR = r;
     if (r > maxR) maxR = r;
   });
   const info = document.getElementById('overview-info');
-  if (maxR < 0) { minR = 0; maxR = ROWS - 1; info.textContent = currentDate + ' 尚無預約，顯示全部座位'; }
-  else info.textContent = currentDate + '　顯示第 ' + (minR + 1) + '～' + (maxR + 1) + ' 排（有預約的範圍）';
+  if (maxR < 0) { maxR = ROWS - 1; info.textContent = currentDate + ' 尚無預約，顯示全部座位'; }
+  else info.textContent = currentDate + '　顯示第 1～' + (maxR + 1) + ' 排（到最後一排有預約的座位）';
   document.querySelectorAll('#seating .row-wrap').forEach(row => {
     const r = +row.dataset.row;
     row.style.display = (r >= minR && r <= maxR) ? '' : 'none';

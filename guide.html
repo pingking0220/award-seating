@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>頒獎座位預約系統｜操作說明</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7F6F3; --panel:#FFFFFF; --ink:#2B2B28; --muted:#6F6D66; --line:#E3E1DA;
+  --edu-bg:#EEEDFE; --edu-tx:#3C3489; --stu-bg:#E1F5EE; --stu-tx:#085041; --cou-bg:#FAEEDA; --cou-tx:#633806;
+  --sel:#378ADD; --red:#DC2626;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans TC',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.85;font-size:16px}
+header{background:var(--panel);border-bottom:1px solid var(--line);padding:22px 16px}
+header .in{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:22px;font-weight:700;margin-right:auto}
+header h1 small{display:block;font-size:13px;font-weight:400;color:var(--muted)}
+.go{display:inline-block;padding:9px 18px;border-radius:9px;background:var(--sel);color:#fff;text-decoration:none;font-weight:500;font-size:15px}
+.layout{max-width:980px;margin:0 auto;padding:24px 16px 80px}
+nav.toc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 22px;margin-bottom:28px}
+nav.toc b{display:block;margin-bottom:6px}
+nav.toc ol{columns:2;column-gap:32px;padding-left:22px;font-size:15px}
+nav.toc a{color:var(--ink);text-decoration:none}
+nav.toc a:hover{color:var(--sel);text-decoration:underline}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px 26px;margin-bottom:22px;scroll-margin-top:12px}
+h2{font-size:20px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+h2 .no{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9px;background:var(--ink);color:#fff;font-size:15px;flex-shrink:0}
+h3{font-size:16.5px;font-weight:700;margin:18px 0 6px}
+p{margin-bottom:8px}
+figure{margin:14px 0 16px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+figure a{display:block;cursor:zoom-in}
+figure img{display:block;width:100%;height:auto}
+figure.narrow{max-width:520px}
+figcaption{font-size:13px;color:var(--muted);padding:6px 12px;border-top:1px solid var(--line);background:var(--panel)}
+ol.steps,ul.marks{padding-left:0;list-style:none;margin:8px 0}
+ol.steps li,ul.marks li{position:relative;padding-left:36px;margin-bottom:8px}
+.n{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;font-size:13px;font-weight:700;position:absolute;left:0;top:3px}
+.n.inline{position:static;vertical-align:-5px;margin:0 2px}
+ol.steps{counter-reset:s}
+ol.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:3px;width:24px;height:24px;border-radius:50%;background:var(--sel);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.tip,.warn{border-radius:10px;padding:10px 14px;margin:12px 0;font-size:15px}
+.tip{background:var(--stu-bg);color:var(--stu-tx)}
+.warn{background:var(--cou-bg);color:var(--cou-tx)}
+.btn{display:inline-block;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);font-size:14px;line-height:1.7;white-space:nowrap}
+.btn.red{background:#C0392B;color:#fff;border-color:#C0392B}
+.btn.blue{background:var(--sel);color:#fff;border-color:var(--sel)}
+.dept{display:inline-block;padding:0 8px;border-radius:6px;font-size:14px;font-weight:700}
+.dept.edu{background:var(--edu-bg);color:var(--edu-tx)} .dept.stu{background:var(--stu-bg);color:var(--stu-tx)} .dept.cou{background:var(--cou-bg);color:var(--cou-tx)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;margin:10px 0}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--bg)}
+details{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:10px;background:var(--panel)}
+details summary{cursor:pointer;font-weight:700}
+details[open] summary{margin-bottom:6px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.top{position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:20px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+@media (max-width:720px){
+  nav.toc ol{columns:1}
+  section{padding:18px 16px}
+  .two{grid-template-columns:1fr}
+}
+@media print{
+  header .go,.top,nav.toc{display:none}
+  section{break-inside:avoid-page;border:none;padding:0 0 12px}
+  body{background:#fff}
+}
+</style>
+</head>
+<body>
+
+<header><div class="in">
+  <h1>頒獎典禮座位預約系統　操作說明<small>力行國小・教務處／學務處／輔導室共用</small></h1>
+  <a class="go" href="./" target="_blank" rel="noopener">開啟預約系統 →</a>
+</div></header>
+
+<div class="layout">
+
+<nav class="toc">
+  <b>目錄</b>
+  <ol>
+    <li><a href="#login">登入</a></li>
+    <li><a href="#dept">第一次登入：選擇處室</a></li>
+    <li><a href="#screen">畫面介紹</a></li>
+    <li><a href="#book">預約座位</a></li>
+    <li><a href="#edit">修改或解除單一座位</a></li>
+    <li><a href="#delete">批次刪除</a></li>
+    <li><a href="#import">用 Excel 匯入名單</a></li>
+    <li><a href="#undo">復原（誤刪救回）</a></li>
+    <li><a href="#print">列印通知單／場地圖、匯出</a></li>
+    <li><a href="#overview">總覽模式（看從第幾排開始坐）</a></li>
+    <li><a href="#members">管理者：成員管理</a></li>
+    <li><a href="#faq">常見問題</a></li>
+  </ol>
+</nav>
+
+<!-- 1 -->
+<section id="login">
+  <h2><span class="no">1</span>登入</h2>
+  <p>系統只開放學校 Google 帳號（<b>@lsps.tp.edu.tw</b>）登入，私人 Gmail 無法使用。</p>
+  <div class="two">
+    <figure class="narrow"><a href="guide/01-login.png" target="_blank"><img src="guide/01-login.png" alt="登入畫面" loading="lazy"></a><figcaption>登入畫面</figcaption></figure>
+    <div>
+      <ul class="marks">
+        <li><span class="n">1</span>按 <span class="btn blue">使用 Google 帳號登入</span>，在跳出的視窗選擇你的學校帳號。</li>
+      </ul>
+      <div class="warn">⚠ 不要從 <b>LINE、Facebook</b> 裡直接點連結登入，Google 會擋。請改用 <b>Chrome、Edge 或 Safari</b> 開啟（見<a href="#faq">常見問題</a>）。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section id="dept">
+  <h2><span class="no">2</span>第一次登入：選擇處室</h2>
+  <p>第一次登入時會跳出這個視窗，請選擇<b>你所屬的處室</b>。之後你只能預約、修改自己處室的座位。</p>
+  <div class="two">
+    <figure class="narrow"><a href="guide/02-deptpick.png" target="_blank"><img src="guide/02-deptpick.png" alt="選擇處室" loading="lazy"></a><figcaption>第一次登入的處室選擇</figcaption></figure>
+    <div>
+      <ul class="marks">
+        <li><span class="n">1</span>點選你的處室：<span class="dept edu">教務處</span> <span class="dept stu">學務處</span> <span class="dept cou">輔導室</span>，再按「確定」。</li>
+        <li><span class="n">2</span>還不確定的話可以按「稍後再選」，先以<b>只能檢視</b>的身分看座位表。之後可點畫面上方黃色提示列的 <span class="btn">選擇我的處室</span> 再選。</li>
+      </ul>
+      <div class="warn">⚠ <b>選定後無法自行更改</b>。選錯了請聯絡管理者（it@lsps.tp.edu.tw）修改。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section id="screen">
+  <h2><span class="no">3</span>畫面介紹</h2>
+  <figure><a href="guide/03-main.png" target="_blank"><img src="guide/03-main.png" alt="主畫面" loading="lazy"></a><figcaption>主畫面（以教務處身分為例，點圖可放大）</figcaption></figure>
+  <ul class="marks">
+    <li><span class="n">1</span><b>目前登入的帳號與身分</b>，旁邊是「登出」。</li>
+    <li><span class="n">2</span><b>你的處室</b>。一般同仁只會看到自己的處室；管理者可以在三個處室之間切換。</li>
+    <li><span class="n">3</span><b>編輯工具</b>：框選刪除、全部刪除、匯入名單、復原。</li>
+    <li><span class="n">4</span><b>檢視與輸出</b>：匯出 CSV、列印通知單、列印場地圖、總覽模式、使用說明（就是這一頁）。</li>
+    <li><span class="n">5</span><b>身分提示列</b>，說明你現在能做什麼。</li>
+    <li><span class="n">6</span><b>典禮日期（場次）</b>。每個日期是一份獨立的座位表，可以選未來的日期提前預約。</li>
+    <li><span class="n">7</span><b>班級、獎項、姓名</b>（都是選填）。預約<b>之前</b>先填好，這次選的座位都會套用這些資料。</li>
+    <li><span class="n">8</span><b>座位圖</b>：講台在上方，灰色是空位，有顏色的是已預約（<span class="dept edu">教務處</span> <span class="dept stu">學務處</span> <span class="dept cou">輔導室</span>）。</li>
+    <li><span class="n">9</span><b>統計</b>：各處室已預約幾席、全場共幾席。</li>
+  </ul>
+  <div class="tip">💡 畫面是<b>即時同步</b>的：其他處室一預約，你的畫面就會自動出現，不用重新整理。</div>
+</section>
+
+<!-- 4 -->
+<section id="book">
+  <h2><span class="no">4</span>預約座位</h2>
+  <ol class="steps">
+    <li>在 <span class="n inline">6</span> 確認<b>典禮日期</b>正確。</li>
+    <li>（選填）在 <span class="n inline">7</span> 輸入班級、獎項、姓名。</li>
+    <li>在座位圖上<b>點一下</b>單一空位，或<b>按住滑鼠拖曳</b>框選多個空位。</li>
+    <li>確認視窗出現後，檢查資料無誤，按 <span class="btn blue">確認預約</span>。</li>
+  </ol>
+  <figure><a href="guide/04-drag.png" target="_blank"><img src="guide/04-drag.png" alt="拖曳框選" loading="lazy"></a><figcaption><span class="n inline">1</span> 先填資料　<span class="n inline">2</span> 按住滑鼠拖曳，藍框內的空位會被選取</figcaption></figure>
+  <div class="two">
+    <figure class="narrow"><a href="guide/05-confirm.png" target="_blank"><img src="guide/05-confirm.png" alt="確認預約" loading="lazy"></a><figcaption>確認預約視窗</figcaption></figure>
+    <div>
+      <ul class="marks">
+        <li><span class="n">1</span>這次選到的座位。</li>
+        <li><span class="n">2</span>日期、處室、班級、獎項、姓名、座位數。<br>如果這位學生<b>已經有其他獎項</b>，這裡會出現紅色提醒。</li>
+        <li><span class="n">3</span>沒問題就按 <span class="btn blue">確認預約</span>。</li>
+      </ul>
+      <div class="tip">💡 <b>手機／平板</b>：請一個一個<b>點選</b>座位；手指滑動是捲動座位圖。一次要預約很多座位時，建議用電腦拖曳框選，或用 <a href="#import">Excel 匯入</a>。</div>
+    </div>
+  </div>
+  <div class="tip">💡 常見做法：先框選一整塊座位（不填姓名）把位子「佔住」，名單確定後再逐一點座位補上姓名，或整批用 Excel 匯入。</div>
+</section>
+
+<!-- 5 -->
+<section id="edit">
+  <h2><span class="no">5</span>修改或解除單一座位</h2>
+  <p>點一下<b>已預約</b>的座位就會打開這個視窗。</p>
+  <div class="two">
+    <figure class="narrow"><a href="guide/06-edit.png" target="_blank"><img src="guide/06-edit.png" alt="編輯座位" loading="lazy"></a><figcaption>編輯座位視窗</figcaption></figure>
+    <div>
+      <ul class="marks">
+        <li><span class="n">1</span>直接修改班級、獎項、姓名。</li>
+        <li><span class="n">2</span>按 <span class="btn blue">儲存變更</span> 存檔。</li>
+        <li><span class="n">3</span>按 <span class="btn red">解除預約</span> 把座位還原成空位。</li>
+      </ul>
+      <p style="font-size:15px;color:var(--muted)">點到<b>其他處室</b>的座位只能查看資料，不會出現這些按鈕。</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section id="delete">
+  <h2><span class="no">6</span>批次刪除</h2>
+  <h3>框選刪除（刪掉一部分）</h3>
+  <ol class="steps">
+    <li>按 <span class="btn">框選刪除</span>，按鈕會變紅，座位圖外框也變紅，表示進入<b>刪除模式</b>。</li>
+    <li>拖曳框選要刪除的座位，只會選到<b>自己處室</b>的座位。</li>
+    <li>在確認視窗按 <span class="btn red">確認刪除</span>。</li>
+    <li>刪完再按一次 <span class="btn">框選刪除</span>，回到預約模式。</li>
+  </ol>
+  <figure><a href="guide/07-delmode.png" target="_blank"><img src="guide/07-delmode.png" alt="框選刪除" loading="lazy"></a><figcaption><span class="n inline">1</span> 刪除模式開啟中（紅色）　<span class="n inline">2</span> 紅框內本處室的座位會被選取刪除</figcaption></figure>
+  <h3>全部刪除（清空本處室）</h3>
+  <div class="two">
+    <figure class="narrow"><a href="guide/08-clearall.png" target="_blank"><img src="guide/08-clearall.png" alt="全部刪除" loading="lazy"></a><figcaption>全部刪除視窗</figcaption></figure>
+    <div>
+      <p>按 <span class="btn">全部刪除</span> → <span class="n inline">1</span>「刪除本處室全部座位」，會清空<b>這個日期</b>你處室的所有座位，其他日期和其他處室不受影響。</p>
+      <p style="font-size:15px;color:var(--muted)">「刪除所有處室全部座位」只有管理者看得到。</p>
+      <div class="tip">💡 刪錯了不用緊張，可以用 <a href="#undo">復原</a> 救回來。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section id="import">
+  <h2><span class="no">7</span>用 Excel 匯入名單</h2>
+  <p>名單很長時，用 Excel 一次匯入最快。</p>
+  <div class="two">
+    <figure class="narrow"><a href="guide/09-import.png" target="_blank"><img src="guide/09-import.png" alt="匯入名單" loading="lazy"></a><figcaption>匯入名單視窗（檢查結果範例）</figcaption></figure>
+    <div>
+      <ul class="marks">
+        <li><span class="n">1</span><span class="btn">下載模板（Excel）</span>，照欄位填寫。</li>
+        <li><span class="n">2</span><span class="btn">選擇檔案上傳</span>，支援 .xlsx 和 .csv。</li>
+        <li><span class="n">3</span>系統會先<b>檢查並預覽</b>：可以匯入幾筆、哪些會<b>覆蓋</b>舊資料、哪些列有<b>問題</b>（例如座位已被其他處室預約）。</li>
+        <li><span class="n">4</span>確認無誤後按 <span class="btn blue">確認匯入</span>。</li>
+      </ul>
+    </div>
+  </div>
+  <h3>模板欄位</h3>
+  <table>
+    <tr><th>欄位</th><th>填法</th><th>範例</th></tr>
+    <tr><td>日期</td><td>可留空，留空就匯入到畫面上目前選的日期。也可以寫民國年。</td><td>2026-10-15、115/10/15</td></tr>
+    <tr><td>排</td><td>1～15</td><td>3</td></tr>
+    <tr><td>區</td><td>左、中、右</td><td>中</td></tr>
+    <tr><td>座號</td><td>左區、右區 1～4；中區 1～7</td><td>5</td></tr>
+    <tr><td>處室</td><td>教務處、學務處、輔導室（只能填自己的處室）</td><td>教務處</td></tr>
+    <tr><td>班級／獎項／姓名</td><td>選填，獎項和姓名最多 40 字</td><td>301／模範生／王小明</td></tr>
+  </table>
+  <div class="tip">💡 <b>最省事的改法</b>：按 <span class="btn">匯出 CSV</span> 下載目前的座位表，用 Excel 修改幾筆後直接匯回來。沒改的列系統會自動略過，只更新有變動的座位。</div>
+  <div class="warn">⚠ 第 1 排左、右區，以及第 15 排左區，實際上沒有座位，填了會被擋下。</div>
+</section>
+
+<!-- 8 -->
+<section id="undo">
+  <h2><span class="no">8</span>復原（誤刪救回）</h2>
+  <p>每次<b>刪除或覆蓋</b>座位之前，系統都會自動存一份備份，每個日期保留最近 20 次。</p>
+  <div class="two">
+    <figure class="narrow"><a href="guide/10-history.png" target="_blank"><img src="guide/10-history.png" alt="復原" loading="lazy"></a><figcaption>復原視窗</figcaption></figure>
+    <div>
+      <ol class="steps">
+        <li>按上方 <span class="btn">復原</span>。</li>
+        <li><span class="n inline">1</span> 先看復原範圍：一般同仁只會還原<b>自己處室</b>的座位，不會動到別的處室。</li>
+        <li><span class="n inline">2</span> 找到出錯<b>之前</b>的時間點，按 <span class="btn blue">復原到這裡</span>。</li>
+      </ol>
+      <div class="tip">💡 復原前系統會再自動備份一次，所以就算復原錯了，也能再復原回來。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section id="print">
+  <h2><span class="no">9</span>列印通知單／場地圖、匯出</h2>
+  <table>
+    <tr><th>按鈕</th><th>用途</th></tr>
+    <tr><td><span class="btn">列印通知單</span></td><td>把<b>你處室</b>在這個日期的得獎者印成小卡，A4 一頁 8 張，裁開發給學生，上面寫著座位位置。只會印<b>有填姓名或獎項</b>的座位。</td></tr>
+    <tr><td><span class="btn">列印場地圖</span></td><td>印出整張座位圖，可以貼在視聽教室門口。先切到「總覽模式」再列印，就只會印出有人坐的範圍。</td></tr>
+    <tr><td><span class="btn">匯出 CSV</span></td><td>下載這個日期的完整座位表（Excel 可開啟），可以留存，也可以改完再匯入。</td></tr>
+  </table>
+  <figure class="narrow"><a href="guide/11-slips.png" target="_blank"><img src="guide/11-slips.png" alt="通知單" loading="lazy"></a><figcaption>通知單樣式</figcaption></figure>
+  <div class="warn">⚠ 按「列印通知單」沒反應時，通常是瀏覽器擋了彈出視窗。請點網址列右側的提示，允許這個網站開啟彈出視窗。</div>
+</section>
+
+<!-- 10 -->
+<section id="overview">
+  <h2><span class="no">10</span>總覽模式（看從第幾排開始坐）</h2>
+  <p>典禮當天或排座位時，想一眼看出全場的安排，就用總覽模式。它會<b>從第 1 排顯示到最後一排有人預約的位置</b>，後面沒人的排不顯示，並自動縮放到一個畫面剛好看完，適合投影到大螢幕。</p>
+  <figure><a href="guide/12-overview.png" target="_blank"><img src="guide/12-overview.png" alt="總覽模式" loading="lazy"></a><figcaption><span class="n inline">1</span> 按「總覽模式」進入，按「返回編輯」離開　<span class="n inline">2</span> 目前顯示到第幾排</figcaption></figure>
+  <ul style="padding-left:22px">
+    <li>總覽模式裡還是可以<b>切換日期</b>，也可以點座位查看資料。</li>
+    <li>總覽模式裡<b>不能拖曳框選</b>。要大量預約時，請先按「返回編輯」。</li>
+  </ul>
+</section>
+
+<!-- 11 -->
+<section id="members">
+  <h2><span class="no">11</span>管理者：成員管理</h2>
+  <p>只有管理者看得到上方的 <span class="btn">成員管理</span> 按鈕，用來查看和調整每位同仁的處室。</p>
+  <div class="two">
+    <figure class="narrow"><a href="guide/13-members.png" target="_blank"><img src="guide/13-members.png" alt="成員管理" loading="lazy"></a><figcaption>成員管理視窗</figcaption></figure>
+    <div>
+      <ul class="marks">
+        <li><span class="n">1</span><span class="btn">移除</span>：刪掉這位同仁的身分。下次登入時，他會重新選處室。</li>
+        <li><span class="n">2</span>輸入學校帳號並選擇處室或「管理者」，按 <span class="btn blue">新增／更新</span>。已存在的帳號會直接改成新的處室。</li>
+      </ul>
+      <div class="tip">💡 同仁的處室改了之後，請他<b>登出再登入</b>一次才會生效。</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <h2><span class="no">?</span>常見問題</h2>
+
+  <details open>
+    <summary>從 LINE 點連結，沒辦法登入？</summary>
+    <p>Google 不允許在 LINE、Facebook、Instagram 的內建瀏覽器裡登入。從 LINE 開啟時，系統會<b>自動改用手機的瀏覽器</b>開啟。如果還是出現下面的紅字，請點右上角「⋯」選單，選「<b>用瀏覽器開啟</b>」。</p>
+    <figure class="narrow"><a href="guide/14-inapp.png" target="_blank"><img src="guide/14-inapp.png" alt="內建瀏覽器提示" loading="lazy"></a><figcaption>在內建瀏覽器中會看到的提示</figcaption></figure>
+  </details>
+
+  <details>
+    <summary>點座位沒辦法預約，一直叫我「選擇處室」？</summary>
+    <p>你還沒選處室，目前只能檢視。請點畫面上方黃色提示列的 <span class="btn">選擇我的處室</span>（見第 2 步）。</p>
+  </details>
+
+  <details>
+    <summary>選錯處室了，怎麼改？</summary>
+    <p>處室選定後無法自行更改，請聯絡管理者 <b>it@lsps.tp.edu.tw</b> 修改。改完後請登出再登入。</p>
+  </details>
+
+  <details>
+    <summary>出現「權限不足：你只能編輯自己處室的座位」？</summary>
+    <p>你想修改的座位屬於其他處室，或是那個座位剛好被別的處室搶先預約了。請重新整理頁面，確認座位的最新狀態。</p>
+  </details>
+
+  <details>
+    <summary>跳出「此學生已獲其他獎項」的紅字提醒？</summary>
+    <p>系統發現同一個姓名在其他座位（可能是別的日期或別的處室）已經有獎項。這只是提醒，確認是同一位學生、或只是同名同姓後，照常預約即可。</p>
+  </details>
+
+  <details>
+    <summary>匯入時顯示「日期格式錯誤」？</summary>
+    <p>日期請寫成 <b>2026-10-15</b> 或民國年 <b>115/10/15</b>，或是直接把日期欄留空（會用畫面上選的日期）。</p>
+  </details>
+
+  <details>
+    <summary>不小心刪掉了！</summary>
+    <p>按上方的 <span class="btn">復原</span>，選刪除之前的時間點即可救回（見第 8 步）。</p>
+  </details>
+</section>
+
+<p style="text-align:center;color:var(--muted);font-size:13px">有問題請洽資訊組（it@lsps.tp.edu.tw）</p>
+</div>
+
+<a class="top" href="#" aria-label="回到頂端">↑</a>
+</body>
+</html>
