@@ -195,13 +195,13 @@ body.norole .write-tool{display:none}
     </div>
     <div class="field">
       <label>獎項名稱（選填）</label>
-      <input id="f-award" type="text" placeholder="例：閱讀楷模一年級" maxlength="20">
+      <input id="f-award" type="text" placeholder="例：閱讀楷模一年級" maxlength="40">
     </div>
     <div class="field">
       <label>得獎者姓名（選填）</label>
-      <input id="f-name" type="text" placeholder="例：王小明" maxlength="20">
+      <input id="f-name" type="text" placeholder="例：王小明" maxlength="40">
     </div>
-    <div id="hint">選擇典禮日期（可選<b>未來日期</b>提前預約），座位圖會自動切換到該場次。填好處室與資料後，點選或<b>拖曳框選</b>座位預約；開啟「框選刪除」可批次刪除本處室座位。</div>
+    <div id="hint">選擇典禮日期（可選<b>未來日期</b>提前預約），座位圖會自動切換到該場次。填好處室與資料後，點選或<b>拖曳框選</b>座位預約（手機／平板請逐一點選，滑動可捲動座位圖）；開啟「框選刪除」可批次刪除本處室座位。</div>
   </div>
 
   <div id="stage">講台</div>
@@ -407,6 +407,8 @@ let seatsAttached = false;
 function emailToKey(e) { return String(e || '').toLowerCase().replace(/\./g, ','); }
 function isAdmin() { return myRole === 'admin'; }
 function canEditDept(d) { return isAdmin() || myRole === d; }
+/* 雲端模式下，尚未選處室的帳號只能檢視（單機模式不受限） */
+function canWrite() { return !db || isAdmin() || !!myRole; }
 
 function todayStr() {
   const d = new Date();
@@ -455,12 +457,39 @@ function initCloud() {
   }
 }
 
+/* LINE／Facebook／Instagram 等 App 內建瀏覽器會被 Google 擋登入（disallowed_useragent） */
+function inAppBrowserName() {
+  const ua = navigator.userAgent || '';
+  if (/\bLine\//i.test(ua)) return 'LINE';
+  if (/FBAN|FBAV|FB_IAB/i.test(ua)) return 'Facebook';
+  if (/Instagram/i.test(ua)) return 'Instagram';
+  if (/MicroMessenger/i.test(ua)) return '微信';
+  return '';
+}
+function checkInAppBrowser() {
+  const app = inAppBrowserName();
+  if (!app) return;
+  /* LINE 支援此參數，會自動改用手機預設瀏覽器開啟 */
+  if (app === 'LINE' && !/[?&]openExternalBrowser=1/.test(location.search)) {
+    location.replace(location.href.split('#')[0] + (location.search ? '&' : '?') + 'openExternalBrowser=1');
+    return;
+  }
+  document.getElementById('login-msg').innerHTML = '你正在 <b>' + app + '</b> 內建瀏覽器中，Google 不允許在這裡登入。<br>'
+    + '請點右上角「⋯」選單，選「用瀏覽器開啟」（Chrome 或 Safari）。';
+}
+
 function signIn() {
+  if (inAppBrowserName()) { checkInAppBrowser(); return; }
   const provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ hd: SCHOOL_DOMAIN, prompt: 'select_account' });
   document.getElementById('login-msg').textContent = '';
   auth.signInWithPopup(provider).catch(err => {
-    document.getElementById('login-msg').textContent = '登入失敗：' + (err.code || err.message || '');
+    const code = err.code || '';
+    let msg = '登入失敗：' + (code || err.message || '');
+    if (code === 'auth/popup-blocked') msg = '登入視窗被瀏覽器擋住了，請允許此網站的彈出視窗後再按一次。';
+    else if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') msg = '登入視窗已關閉，請再按一次登入。';
+    else if (code === 'auth/network-request-failed') msg = '網路連線失敗，請確認網路後再試。';
+    document.getElementById('login-msg').textContent = msg;
   });
 }
 function signOutUser() { if (auth) auth.signOut(); }
@@ -910,6 +939,12 @@ let dragging = false;
 function onSeatClick(e) {
   if (dragging) return;
   const key = seatKey(+e.currentTarget.dataset.r, +e.currentTarget.dataset.z, +e.currentTarget.dataset.s);
+  if (!canWrite()) {
+    if (seats[key]) { showRelease(key); return; }
+    showToast('請先選擇你的處室，才能預約座位');
+    showDeptPick();
+    return;
+  }
   if (delMode) {
     if (seats[key] && seats[key].dept === currentDept) {
       selecting = [key];
@@ -930,7 +965,7 @@ function addDragListeners() {
 
   function pointerDown(cx, cy, target) {
     const t = target.closest('.seat');
-    if (!t) return false;
+    if (!t || !canWrite()) return false;
     active = true; dragging = false; selecting = [];
     startX = cx; startY = cy;
     return true;
@@ -975,17 +1010,7 @@ function addDragListeners() {
   });
   document.addEventListener('mousemove', e => pointerMove(e.clientX, e.clientY));
   document.addEventListener('mouseup', pointerUp);
-
-  wrap.addEventListener('touchstart', e => {
-    const t = e.touches[0];
-    pointerDown(t.clientX, t.clientY, e.target);
-  }, { passive: true });
-  wrap.addEventListener('touchmove', e => {
-    const t = e.touches[0];
-    pointerMove(t.clientX, t.clientY);
-    if (dragging) e.preventDefault();
-  }, { passive: false });
-  wrap.addEventListener('touchend', pointerUp);
+  /* 觸控裝置不做框選：手指滑動留給捲動座位圖，點一下即可預約單一座位 */
 }
 
 /* ---------- 確認預約 ---------- */
@@ -1103,7 +1128,7 @@ function showRelease(key) {
   if (!d) return;
   const m = DEPT_META[d.dept];
   const [r, z, s] = key.split('-').map(Number);
-  const own = isAdmin() || d.dept === currentDept;
+  const own = canWrite() && (isAdmin() || d.dept === currentDept);
   let info = '<b>第 ' + (r + 1) + ' 排 ' + ZONE_NAMES[z] + '區 第 ' + (s + 1) + ' 座</b><br>處室：' + m.label;
   const edit = document.getElementById('release-edit');
   if (own) {
@@ -1281,8 +1306,8 @@ function parseImportRows(rows) {
     const rSeat = get(['座號', '座']);
     const rDept = get(['處室']);
     const classNo = get(['班級', '班級座號']).slice(0, 20);
-    const award = get(['獎項', '獎項名稱']).slice(0, 20);
-    const name = get(['姓名', '得獎者姓名']).slice(0, 20);
+    const award = get(['獎項', '獎項名稱']).slice(0, 40);   // 與編輯視窗、安全規則一致（40 字）
+    const name = get(['姓名', '得獎者姓名']).slice(0, 40);
 
     if (!rRow && !rZone && !rSeat && !rDept) return;
 
@@ -1515,6 +1540,7 @@ updateDateBadge();
 document.getElementById('st-cap').textContent = TOTAL_SEATS;
 
 buildSeating();
+checkInAppBrowser();
 if (FIREBASE_CONFIG) {
   const scripts = [
     'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
