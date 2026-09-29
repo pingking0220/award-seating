@@ -146,6 +146,14 @@ body.norole .write-tool{display:none}
 .hist-row button{flex-shrink:0;font-size:13px;padding:6px 14px;border-radius:8px;border:1px solid var(--sel);background:var(--sel);color:#fff;cursor:pointer;font-family:inherit}
 .hist-row button:hover{opacity:.9}
 
+#btn-overview.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+#overview-info{display:none;text-align:center;font-size:14px;color:var(--muted);margin-bottom:8px}
+body.overview #overview-info{display:block}
+body.overview #fields .field:not(:first-child),body.overview #hint,body.overview #role-banner{display:none !important}
+body.overview #fields{padding:8px 14px;margin-bottom:8px}
+body.overview main{padding-top:12px;padding-bottom:12px}
+body.overview #seating-outer{overflow:hidden}
+
 @media (max-width:720px){
   header{padding:12px 14px;gap:8px}
   main{padding:14px 10px 50px}
@@ -179,6 +187,7 @@ body.norole .write-tool{display:none}
   <button class="tool-btn" onclick="exportCSV()">匯出 CSV</button>
   <button class="tool-btn" onclick="printSlips()">列印通知單</button>
   <button class="tool-btn" onclick="window.print()">列印場地圖</button>
+  <button class="tool-btn" id="btn-overview" onclick="toggleOverview()">總覽模式</button>
   <button class="tool-btn" id="btn-members" style="display:none" onclick="showMembers()">成員管理</button>
 </header>
 
@@ -204,6 +213,7 @@ body.norole .write-tool{display:none}
     <div id="hint">選擇典禮日期（可選<b>未來日期</b>提前預約），座位圖會自動切換到該場次。填好處室與資料後，點選或<b>拖曳框選</b>座位預約（手機／平板請逐一點選，滑動可捲動座位圖）；開啟「框選刪除」可批次刪除本處室座位。</div>
   </div>
 
+  <div id="overview-info"></div>
   <div id="stage">講台</div>
 
   <div id="seating-outer">
@@ -833,6 +843,7 @@ function buildSeating() {
   for (let r = 0; r < ROWS; r++) {
     const row = document.createElement('div');
     row.className = 'row-wrap';
+    row.dataset.row = r;
     const lblL = document.createElement('div');
     lblL.className = 'row-label';
     lblL.textContent = (r + 1) + ' 排';
@@ -922,7 +933,53 @@ function renderAll() {
     renderSeat(seatKey(+el.dataset.r, +el.dataset.z, +el.dataset.s));
   });
   updateStatus();
+  if (overview) applyOverview();
 }
+
+/* ---------- 總覽模式：只顯示有人預約的排範圍，並縮放到一個畫面看完 ---------- */
+let overview = false;
+function toggleOverview() {
+  overview = !overview;
+  document.body.classList.toggle('overview', overview);
+  document.getElementById('btn-overview').classList.toggle('active', overview);
+  document.getElementById('btn-overview').textContent = overview ? '返回編輯' : '總覽模式';
+  if (overview && delMode) toggleDelMode();
+  if (overview) { window.scrollTo(0, 0); applyOverview(); } else resetOverview();
+}
+function resetOverview() {
+  document.querySelectorAll('#seating .row-wrap').forEach(row => row.style.display = '');
+  document.getElementById('seating').style.zoom = '';
+  document.getElementById('overview-info').textContent = '';
+}
+function applyOverview() {
+  let minR = ROWS, maxR = -1;
+  Object.keys(seats).forEach(k => {
+    if (!seats[k] || REMOVED_SEATS.has(k)) return;
+    const r = +k.split('-')[0];
+    if (r < minR) minR = r;
+    if (r > maxR) maxR = r;
+  });
+  const info = document.getElementById('overview-info');
+  if (maxR < 0) { minR = 0; maxR = ROWS - 1; info.textContent = currentDate + ' 尚無預約，顯示全部座位'; }
+  else info.textContent = currentDate + '　顯示第 ' + (minR + 1) + '～' + (maxR + 1) + ' 排（有預約的範圍）';
+  document.querySelectorAll('#seating .row-wrap').forEach(row => {
+    const r = +row.dataset.row;
+    row.style.display = (r >= minR && r <= maxR) ? '' : 'none';
+  });
+  fitOverview();
+}
+function fitOverview() {
+  const wrap = document.getElementById('seating');
+  const outer = document.getElementById('seating-outer');
+  wrap.style.zoom = 1;
+  const natW = wrap.offsetWidth, natH = wrap.offsetHeight;
+  const availW = outer.clientWidth - 20;
+  const bottomUI = document.getElementById('legend').offsetHeight + document.getElementById('status-bar').offsetHeight + 70;
+  const availH = window.innerHeight - (outer.getBoundingClientRect().top + window.scrollY) - bottomUI;
+  const z = Math.max(0.3, Math.min(1.6, availW / natW, availH / natH));
+  wrap.style.zoom = z.toFixed(3);
+}
+window.addEventListener('resize', () => { if (overview) fitOverview(); });
 
 function updateStatus() {
   const counts = { edu: 0, stu: 0, cou: 0 };
@@ -965,7 +1022,7 @@ function addDragListeners() {
 
   function pointerDown(cx, cy, target) {
     const t = target.closest('.seat');
-    if (!t || !canWrite()) return false;
+    if (!t || !canWrite() || overview) return false;   // 總覽模式只看不框選（縮放後座標不準）
     active = true; dragging = false; selecting = [];
     startX = cx; startY = cy;
     return true;
