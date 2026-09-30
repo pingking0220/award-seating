@@ -1150,22 +1150,23 @@ function toggleMoveMode() {
   document.getElementById('btn-movemode').classList.toggle('active', moveMode);
   document.body.classList.toggle('movemode', moveMode);
   renderAll();
-  showToast(moveMode ? '移動模式：框選或點選本處室座位，再拖曳到新位置' : '已回到預約模式');
+  showToast(moveMode ? '移動模式：先框選或點選座位（變橘框），再拖曳橘框座位到新位置' : '已回到預約模式');
 }
 
 function addDragListeners() {
   const wrap = document.getElementById('seating-outer');
   let startX, startY, active = null;   // active: 'rect'（框選）或 'move'（拖曳移動）
+  let rectAdd = false;                 // 移動模式按住 Shift/Ctrl 框選 → 加選
 
-  function pointerDown(cx, cy, target) {
+  function pointerDown(cx, cy, target, additive) {
+    if (!target.closest('#seating') || !canWrite() || overview) return false;   // 總覽模式只看不操作（縮放後座標不準）
     const t = target.closest('.seat');
-    if (!t || !canWrite() || overview) return false;   // 總覽模式只看不操作（縮放後座標不準）
-    const key = seatKey(+t.dataset.r, +t.dataset.z, +t.dataset.s);
-    dragging = false; selecting = []; startX = cx; startY = cy;
-    if (!delMode && canMoveSeat(key)) {
-      /* 從自己的已預約座位開始拖 → 移動；若它在「移動模式」的選取群組內，就整批移動 */
-      const keys = (moveMode && moveSel.includes(key)) ? moveSel.slice() : [key];
-      moveDrag = { keys: keys, from: key, plan: null };
+    const key = t ? seatKey(+t.dataset.r, +t.dataset.z, +t.dataset.s) : null;
+    dragging = false; selecting = []; startX = cx; startY = cy; rectAdd = !!additive;
+    /* 一般模式：拖自己的已預約座位 → 移動該座位。
+       移動模式：只有從「已選取（橘框）」的座位開始拖才是整批移動，其餘（含已預約座位）一律是框選 */
+    if (key && !delMode && canMoveSeat(key) && (!moveMode || moveSel.includes(key))) {
+      moveDrag = { keys: moveMode ? moveSel.slice() : [key], from: key, plan: null };
       active = 'move';
     } else {
       active = 'rect';
@@ -1175,7 +1176,14 @@ function addDragListeners() {
   function pointerMove(cx, cy) {
     if (!active) return;
     const dx = cx - startX, dy = cy - startY;
-    if (!dragging && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) dragging = true;
+    if (!dragging && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+      dragging = true;
+      /* 移動模式重新框選（沒按 Shift）→ 先清掉舊的選取 */
+      if (active === 'rect' && moveMode && !rectAdd && moveSel.length) {
+        moveSel.forEach(k => { const el = document.getElementById('seat-' + k); if (el) el.classList.remove('move-sel'); });
+        moveSel = [];
+      }
+    }
     if (!dragging) return;
     if (active === 'move') { moveDragOver(cx, cy); return; }
     const rect = document.getElementById('drag-rect');
@@ -1195,7 +1203,10 @@ function addDragListeners() {
       if (sr.right > wr.left + x1 && sr.left < wr.left + x2 && sr.bottom > wr.top + y1 && sr.top < wr.top + y2) newSel.push(k);
     });
     if (newSel.join() !== selecting.join()) {
-      selecting.forEach(k => { const el = document.getElementById('seat-' + k); if (el) el.classList.remove('selecting', 'del-selecting', 'move-sel'); });
+      selecting.forEach(k => {
+        const el = document.getElementById('seat-' + k);
+        if (el) el.classList.remove('selecting', 'del-selecting', ...(moveSel.includes(k) ? [] : ['move-sel']));
+      });
       selecting = newSel;
       selecting.forEach(k => { const el = document.getElementById('seat-' + k); if (el) el.classList.add(selCls); });
     }
@@ -1214,7 +1225,8 @@ function addDragListeners() {
       }
       moveDrag = null;
     } else if (dragging && moveMode) {
-      moveSel = selecting.slice(); selecting = [];
+      moveSel = rectAdd ? moveSel.concat(selecting.filter(k => !moveSel.includes(k))) : selecting.slice();
+      selecting = [];
       renderAll();
       showToast(moveSel.length ? ('已選取 ' + moveSel.length + ' 個座位，拖曳其中任一個即可整批移動') : '沒有選到可移動的座位');
     } else if (dragging && selecting.length > 0) showModal();
@@ -1223,7 +1235,7 @@ function addDragListeners() {
 
   wrap.addEventListener('mousedown', e => {
     if (e.button !== 0) return;
-    if (pointerDown(e.clientX, e.clientY, e.target)) e.preventDefault();
+    if (pointerDown(e.clientX, e.clientY, e.target, e.shiftKey || e.ctrlKey || e.metaKey)) e.preventDefault();
   });
   document.addEventListener('mousemove', e => pointerMove(e.clientX, e.clientY));
   document.addEventListener('mouseup', pointerUp);

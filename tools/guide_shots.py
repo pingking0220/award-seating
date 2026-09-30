@@ -128,8 +128,8 @@ with sync_playwright() as p:
 
     # 16 移動模式：框選兩席 → 整批拖曳（拍完移回原位放開＝取消）
     page.click("#btn-movemode"); page.wait_for_timeout(2600)
-    a = page.locator("#seat-2-1-1").bounding_box(); z = page.locator("#seat-2-1-3").bounding_box()
-    page.mouse.move(a["x"] - 20, a["y"] + 10); page.mouse.down(); page.mouse.move(z["x"] + 60, z["y"] + 60, steps=8); page.mouse.up()
+    a = page.locator("#seat-2-1-2").bounding_box(); z = page.locator("#seat-2-1-3").bounding_box()   # 從已預約座位開始框選
+    page.mouse.move(a["x"] + 20, a["y"] + 20); page.mouse.down(); page.mouse.move(z["x"] + 60, z["y"] + 50, steps=8); page.mouse.up()
     page.wait_for_timeout(2600)
     s0 = page.locator("#seat-2-1-2").bounding_box(); t = page.locator("#seat-8-1-4").bounding_box()
     page.mouse.move(s0["x"] + 40, s0["y"] + 36); page.mouse.down(); page.mouse.move(t["x"] + 40, t["y"] + 36, steps=10)
