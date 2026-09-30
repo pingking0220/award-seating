@@ -95,7 +95,7 @@ with sync_playwright() as p:
     page.evaluate(SAMPLE); as_role(page, "edu")
     shot(page, "03-main", [
         ("#user-pill", 1, "tl"), ("#dept-edu", 2, "tl"),
-        (["#btn-movemode", "button[onclick='showHistory()']"], 3, "tl"),
+        (["button[onclick='showClearAll()']", "button[onclick='showHistory()']"], 3, "tl"),
         (["button[onclick='exportCSV()']", "#btn-guide"], 4, "tl"),
         ("#role-banner", 5, "l"), ("#fields .field:first-child", 6, "tl"),
         (["#f-class", "#f-name"], 7, "tl"), ("#seating-outer", 8, "tl"), ("#status-bar", 9, "l")])
@@ -126,26 +126,33 @@ with sync_playwright() as p:
     shot(page, "15-move-single", [("#seat-1-1-3", 1, "l"), ("#seat-5-1-5", 2, "r")], clip=["#stage", "#seat-6-2-3"], pad=10)
     page.mouse.move(x1, y1, steps=5); page.mouse.up(); page.wait_for_timeout(100)
 
-    # 16 移動模式：框選兩席 → 整批拖曳（拍完移回原位放開＝取消）
-    page.click("#btn-movemode"); page.wait_for_timeout(2600)
-    a = page.locator("#seat-2-1-2").bounding_box(); z = page.locator("#seat-2-1-3").bounding_box()   # 從已預約座位開始框選
-    page.mouse.move(a["x"] + 20, a["y"] + 20); page.mouse.down(); page.mouse.move(z["x"] + 60, z["y"] + 50, steps=8); page.mouse.up()
-    page.wait_for_timeout(2600)
+    # 16 從空白處（中區右側走道）框選 → 橘框
+    c7 = page.locator("#seat-2-1-6").bounding_box(); c3 = page.locator("#seat-2-1-2").bounding_box()
+    ax, ay = c7["x"] + c7["width"] + 17, c7["y"] + 8
+    page.mouse.move(ax, ay); page.mouse.down(); page.mouse.move(c3["x"] + 12, c3["y"] + c3["height"] - 8, steps=10)
+    page.evaluate("""([x, y]) => { const d = document.createElement('div'); d.id = 'start-dot';
+        d.style.cssText = 'position:fixed;left:' + (x - 7) + 'px;top:' + (y - 7) + 'px;width:14px;height:14px;border-radius:50%;background:#E67E22;z-index:99';
+        document.body.appendChild(d); }""", [ax, ay])
+    shot(page, "16-select-box", [("#start-dot", 1, "r"), (["#seat-2-1-2", "#seat-2-1-3"], 2, "bl")],
+         clip=["#seat-1-1-0", "#seat-3-2-3"], pad=12)
+    page.evaluate("document.getElementById('start-dot').remove()")
+    page.mouse.up(); page.wait_for_timeout(200)
+
+    # 17 拖橘框座位 → 整批移動（拍完移回原位放開＝取消）
     s0 = page.locator("#seat-2-1-2").bounding_box(); t = page.locator("#seat-8-1-4").bounding_box()
     page.mouse.move(s0["x"] + 40, s0["y"] + 36); page.mouse.down(); page.mouse.move(t["x"] + 40, t["y"] + 36, steps=10)
-    shot(page, "16-move-group", [("#btn-movemode", 1, "tl"), (["#seat-2-1-2", "#seat-2-1-3"], 2, "l"),
-                                 (["#seat-8-1-4", "#seat-8-1-5"], 3, "l")], clip=["header", "#seat-9-2-3"], pad=0)
+    shot(page, "17-move-group", [(["#seat-2-1-2", "#seat-2-1-3"], 1, "l"), (["#seat-8-1-4", "#seat-8-1-5"], 2, "l"),
+                                 ("#sel-bar", 3, "tl")], clip=["#stage", "#sel-bar"], pad=12)
     page.mouse.move(s0["x"] + 40, s0["y"] + 36, steps=5); page.mouse.up(); page.wait_for_timeout(100)
-    page.evaluate("toggleMoveMode()"); page.wait_for_timeout(2600)
+    page.evaluate("clearSelection()")
 
-    # 7 框選刪除
-    page.click("#btn-delmode"); page.wait_for_timeout(2600)
-    a = page.locator("#seat-2-1-2").bounding_box(); z = page.locator("#seat-2-1-3").bounding_box()
-    page.mouse.move(a["x"] + 10, a["y"] + 10); page.mouse.down()
-    page.mouse.move(z["x"] + 60, z["y"] + 60, steps=8)
-    shot(page, "07-delmode", [("#btn-delmode", 1, "tl"), ("#drag-rect", 2, "l")], clip=["header", "#seat-5-2-3"], pad=0)
-    page.mouse.up(); page.wait_for_timeout(200)
-    page.evaluate("closeModal(); toggleDelMode()"); page.wait_for_timeout(2600)
+    # 7 從空白處框選 → 工具列「刪除」
+    c7 = page.locator("#seat-2-1-6").bounding_box(); c3 = page.locator("#seat-2-1-2").bounding_box()
+    page.mouse.move(c7["x"] + c7["width"] + 17, c7["y"] + 8); page.mouse.down()
+    page.mouse.move(c3["x"] + 12, c3["y"] + c3["height"] - 8, steps=10); page.mouse.up(); page.wait_for_timeout(200)
+    shot(page, "07-delete-sel", [(["#seat-2-1-2", "#seat-2-1-3"], 1, "l"), ("#sel-bar .sel-del", 2, "tl")],
+         clip=["#stage", "#sel-bar"], pad=12)
+    page.evaluate("clearSelection()"); page.wait_for_timeout(200)
 
     # 8 全部刪除
     page.evaluate("showClearAll()")
@@ -165,7 +172,7 @@ with sync_playwright() as p:
 
     # 10 復原：先做兩次刪除產生紀錄
     page.evaluate("""() => { persist(currentDate, {'2-1-2': null}, '', '解除預約');
-                             persist(currentDate, {'2-1-3': null}, '', '框選刪除'); showHistory(); }""")
+                             persist(currentDate, {'2-1-3': null}, '', '刪除座位'); showHistory(); }""")
     page.wait_for_timeout(200)
     shot(page, "10-history", [("#history-scope", 1, "l"), ("#history-list .hist-row:first-child button", 2, "l")],
          clip="#history-overlay .modal")

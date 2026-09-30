@@ -87,8 +87,8 @@ details[open] summary{margin-bottom:6px}
     <li><a href="#screen">畫面介紹</a></li>
     <li><a href="#book">預約座位</a></li>
     <li><a href="#edit">修改或解除單一座位</a></li>
-    <li><a href="#move">拖曳移動座位</a></li>
-    <li><a href="#delete">批次刪除</a></li>
+    <li><a href="#move">移動與選取座位</a></li>
+    <li><a href="#delete">刪除座位</a></li>
     <li><a href="#import">用 Excel 匯入名單</a></li>
     <li><a href="#undo">復原（誤刪救回）</a></li>
     <li><a href="#print">列印通知單／場地圖、匯出</a></li>
@@ -136,7 +136,7 @@ details[open] summary{margin-bottom:6px}
   <ul class="marks">
     <li><span class="n">1</span><b>目前登入的帳號與身分</b>，旁邊是「登出」。</li>
     <li><span class="n">2</span><b>你的處室</b>。一般同仁只會看到自己的處室；管理者可以在各處室之間切換。</li>
-    <li><span class="n">3</span><b>編輯工具</b>：移動座位、框選刪除、全部刪除、匯入名單、復原。</li>
+    <li><span class="n">3</span><b>編輯工具</b>：全部刪除、匯入名單、復原。</li>
     <li><span class="n">4</span><b>檢視與輸出</b>：匯出 CSV、列印通知單、列印場地圖、總覽模式、使用說明（就是這一頁）。</li>
     <li><span class="n">5</span><b>身分提示列</b>，說明你現在能做什麼。</li>
     <li><span class="n">6</span><b>典禮日期（場次）</b>。每個日期是一份獨立的座位表，可以選未來的日期提前預約。</li>
@@ -190,8 +190,15 @@ details[open] summary{margin-bottom:6px}
 
 <!-- 6 -->
 <section id="move">
-  <h2><span class="no">6</span>拖曳移動座位</h2>
-  <p>已經預約好的座位想換位置，不用刪掉重訂，直接<b>用滑鼠拖過去</b>就好。姓名、獎項、班級會一起搬過去。</p>
+  <h2><span class="no">6</span>移動與選取座位</h2>
+  <p>已經預約好的座位想換位置，不用刪掉重訂，直接<b>用滑鼠拖過去</b>就好，姓名、獎項、班級會一起搬過去。拖曳時做什麼事，看你<b>從哪裡開始拖</b>：</p>
+  <table>
+    <tr><th>從哪裡開始按住拖曳</th><th>會做什麼</th></tr>
+    <tr><td><b>空位</b></td><td>框選空位 → 預約（見第 4 步）</td></tr>
+    <tr><td><b>自己處室的座位</b></td><td>把這一個座位搬到新位置</td></tr>
+    <tr><td><b>空白處</b>（走道、排號、座位圖邊緣）</td><td>框選自己處室的多個座位（變<b style="color:#B35F10">橘框</b>）</td></tr>
+    <tr><td><b>橘框座位</b></td><td>整批一起搬</td></tr>
+  </table>
 
   <h3>移動單一座位</h3>
   <figure><a href="guide/15-move-single.png" target="_blank"><img src="guide/15-move-single.png" alt="拖曳單一座位" loading="lazy"></a><figcaption><span class="n inline">1</span> 按住自己處室的座位　<span class="n inline">2</span> 拖到新位置，綠色虛線表示可以放</figcaption></figure>
@@ -202,39 +209,42 @@ details[open] summary{margin-bottom:6px}
   </ol>
   <div class="tip">💡 拖到<b>自己處室的另一個座位</b>上，兩個座位會<b>互相交換</b>（游標旁會顯示「交換座位」）。</div>
 
-  <h3>整批移動多個座位</h3>
-  <figure><a href="guide/16-move-group.png" target="_blank"><img src="guide/16-move-group.png" alt="整批移動" loading="lazy"></a><figcaption><span class="n inline">1</span> 移動模式（橘色）　<span class="n inline">2</span> 選取的座位（橘框）　<span class="n inline">3</span> 整批放到新位置</figcaption></figure>
+  <h3>一次搬多個座位</h3>
   <ol class="steps">
-    <li>按上方 <span class="btn" style="background:#E67E22;color:#fff;border-color:#E67E22">移動座位</span>，按鈕和座位圖外框會變成橘色。</li>
-    <li>選取要一起搬的座位：在座位圖上<b>拖曳框選</b>一塊區域（從已預約的座位上開始拉也可以），或<b>逐一點選</b>（再點一次可取消）。選到的座位會有<b>橘色外框</b>。想再加選別區，按住 <b>Shift</b> 再框選。</li>
+    <li>從座位旁邊的<b>空白處</b>（例如走道、排號、座位圖邊緣）按住滑鼠，拉出一個框，框住要搬的座位。框裡<b>自己處室</b>的座位會變成<b style="color:#B35F10">橘框</b>，下方會出現「已選取 N 席」的小工具列。</li>
     <li>按住其中<b>任何一個橘框座位</b>拖到新位置，整組會照原本的相對位置一起搬過去。</li>
-    <li>搬完後橘框會跟著到新位置，可以繼續微調。完成後再按一次 <span class="btn">移動座位</span> 離開（或按鍵盤 <b>Esc</b>）。</li>
+    <li>搬完後橘框會跟著到新位置，可以繼續微調。<b>點一下空白處</b>或按 <b>Esc</b> 就取消選取。</li>
   </ol>
-  <div class="tip">💡 在移動模式裡，<b>只有橘框座位拖得動</b>，從其他地方拉都是框選。只想搬單一座位的話，不用進移動模式，直接拖就好。</div>
+  <div class="two">
+    <figure><a href="guide/16-select-box.png" target="_blank"><img src="guide/16-select-box.png" alt="從空白處框選" loading="lazy"></a><figcaption><span class="n inline">1</span> 從走道（空白處）開始拉　<span class="n inline">2</span> 框到的自己座位變橘框</figcaption></figure>
+    <figure><a href="guide/17-move-group.png" target="_blank"><img src="guide/17-move-group.png" alt="整批移動" loading="lazy"></a><figcaption><span class="n inline">1</span> 拖其中一個橘框座位　<span class="n inline">2</span> 整組放到新位置　<span class="n inline">3</span> 選取工具列</figcaption></figure>
+  </div>
+  <div class="tip">💡 想<b>再加選</b>其他座位：按住 <b>Shift</b> 再框選，或按住 <b>Shift</b> 點座位（再點一次可取消）。</div>
   <div class="warn">⚠ 整批移動時，新位置必須<b>全部是空位</b>，而且不能超出座位區；只要有一個座位放不下，整組都不會移動（那些位置會顯示紅色）。</div>
   <ul style="padding-left:22px">
     <li>只能移動<b>自己處室</b>的座位；管理者可以移動所有座位。</li>
     <li>移錯了可以用 <a href="#undo">復原</a> 還原。</li>
-    <li>拖曳移動需要<b>滑鼠</b>，手機、平板目前不支援；可以改用「解除預約」再重新預約。</li>
+    <li>拖曳需要<b>滑鼠</b>，手機、平板不支援；可以改用「解除預約」再重新預約。</li>
   </ul>
 </section>
 
 <!-- 7 -->
 <section id="delete">
-  <h2><span class="no">7</span>批次刪除</h2>
-  <h3>框選刪除（刪掉一部分）</h3>
+  <h2><span class="no">7</span>刪除座位</h2>
+  <h3>刪除一個座位</h3>
+  <p>點那個座位 → 按 <span class="btn red">解除預約</span>（見第 5 步）。</p>
+  <h3>一次刪除多個座位</h3>
   <ol class="steps">
-    <li>按 <span class="btn">框選刪除</span>，按鈕會變紅，座位圖外框也變紅，表示進入<b>刪除模式</b>。</li>
-    <li>拖曳框選要刪除的座位，只會選到<b>自己處室</b>的座位。</li>
+    <li>照上一步的方法，從<b>空白處</b>拖曳框選要刪除的座位（變橘框）。</li>
+    <li>按下方工具列的 <span class="btn red">刪除</span>（或按鍵盤 <b>Delete</b>）。</li>
     <li>在確認視窗按 <span class="btn red">確認刪除</span>。</li>
-    <li>刪完再按一次 <span class="btn">框選刪除</span>，回到預約模式。</li>
   </ol>
-  <figure><a href="guide/07-delmode.png" target="_blank"><img src="guide/07-delmode.png" alt="框選刪除" loading="lazy"></a><figcaption><span class="n inline">1</span> 刪除模式開啟中（紅色）　<span class="n inline">2</span> 紅框內本處室的座位會被選取刪除</figcaption></figure>
+  <figure><a href="guide/07-delete-sel.png" target="_blank"><img src="guide/07-delete-sel.png" alt="刪除選取的座位" loading="lazy"></a><figcaption><span class="n inline">1</span> 選取的座位（橘框）　<span class="n inline">2</span> 按「刪除」</figcaption></figure>
   <h3>全部刪除（清空本處室）</h3>
   <div class="two">
     <figure class="narrow"><a href="guide/08-clearall.png" target="_blank"><img src="guide/08-clearall.png" alt="全部刪除" loading="lazy"></a><figcaption>全部刪除視窗</figcaption></figure>
     <div>
-      <p>按 <span class="btn">全部刪除</span> → <span class="n inline">1</span>「刪除本處室全部座位」，會清空<b>這個日期</b>你處室的所有座位，其他日期和其他處室不受影響。</p>
+      <p>按上方 <span class="btn">全部刪除</span> → <span class="n inline">1</span>「刪除本處室全部座位」，會清空<b>這個日期</b>你處室的所有座位，其他日期和其他處室不受影響。</p>
       <p style="font-size:15px;color:var(--muted)">「刪除所有處室全部座位」只有管理者看得到。</p>
       <div class="tip">💡 刪錯了不用緊張，可以用 <a href="#undo">復原</a> 救回來。</div>
     </div>
