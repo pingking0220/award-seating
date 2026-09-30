@@ -87,6 +87,7 @@ details[open] summary{margin-bottom:6px}
     <li><a href="#screen">畫面介紹</a></li>
     <li><a href="#book">預約座位</a></li>
     <li><a href="#edit">修改或解除單一座位</a></li>
+    <li><a href="#move">拖曳移動座位</a></li>
     <li><a href="#delete">批次刪除</a></li>
     <li><a href="#import">用 Excel 匯入名單</a></li>
     <li><a href="#undo">復原（誤刪救回）</a></li>
@@ -135,7 +136,7 @@ details[open] summary{margin-bottom:6px}
   <ul class="marks">
     <li><span class="n">1</span><b>目前登入的帳號與身分</b>，旁邊是「登出」。</li>
     <li><span class="n">2</span><b>你的處室</b>。一般同仁只會看到自己的處室；管理者可以在各處室之間切換。</li>
-    <li><span class="n">3</span><b>編輯工具</b>：框選刪除、全部刪除、匯入名單、復原。</li>
+    <li><span class="n">3</span><b>編輯工具</b>：移動座位、框選刪除、全部刪除、匯入名單、復原。</li>
     <li><span class="n">4</span><b>檢視與輸出</b>：匯出 CSV、列印通知單、列印場地圖、總覽模式、使用說明（就是這一頁）。</li>
     <li><span class="n">5</span><b>身分提示列</b>，說明你現在能做什麼。</li>
     <li><span class="n">6</span><b>典禮日期（場次）</b>。每個日期是一份獨立的座位表，可以選未來的日期提前預約。</li>
@@ -188,8 +189,38 @@ details[open] summary{margin-bottom:6px}
 </section>
 
 <!-- 6 -->
+<section id="move">
+  <h2><span class="no">6</span>拖曳移動座位</h2>
+  <p>已經預約好的座位想換位置，不用刪掉重訂，直接<b>用滑鼠拖過去</b>就好。姓名、獎項、班級會一起搬過去。</p>
+
+  <h3>移動單一座位</h3>
+  <figure><a href="guide/15-move-single.png" target="_blank"><img src="guide/15-move-single.png" alt="拖曳單一座位" loading="lazy"></a><figcaption><span class="n inline">1</span> 按住自己處室的座位　<span class="n inline">2</span> 拖到新位置，綠色虛線表示可以放</figcaption></figure>
+  <ol class="steps">
+    <li>在自己處室的座位上<b>按住滑鼠左鍵</b>（游標會變成手掌）。</li>
+    <li>拖到想要的位置：<b style="color:#2E9E5B">綠色虛線</b>＝可以放，<b style="color:#C0392B">紅色虛線</b>＝不能放。</li>
+    <li>放開滑鼠就完成了。</li>
+  </ol>
+  <div class="tip">💡 拖到<b>自己處室的另一個座位</b>上，兩個座位會<b>互相交換</b>（游標旁會顯示「交換座位」）。</div>
+
+  <h3>整批移動多個座位</h3>
+  <figure><a href="guide/16-move-group.png" target="_blank"><img src="guide/16-move-group.png" alt="整批移動" loading="lazy"></a><figcaption><span class="n inline">1</span> 移動模式（橘色）　<span class="n inline">2</span> 選取的座位（橘框）　<span class="n inline">3</span> 整批放到新位置</figcaption></figure>
+  <ol class="steps">
+    <li>按上方 <span class="btn" style="background:#E67E22;color:#fff;border-color:#E67E22">移動座位</span>，按鈕和座位圖外框會變成橘色。</li>
+    <li>選取要一起搬的座位：<b>拖曳框選</b>一塊區域，或<b>逐一點選</b>（再點一次可取消），選到的座位會有<b>橘色外框</b>。</li>
+    <li>按住其中<b>任何一個</b>橘框座位拖到新位置，整組會照原本的相對位置一起搬過去。</li>
+    <li>搬完後橘框會跟著到新位置，可以繼續微調。完成後再按一次 <span class="btn">移動座位</span> 離開（或按鍵盤 <b>Esc</b>）。</li>
+  </ol>
+  <div class="warn">⚠ 整批移動時，新位置必須<b>全部是空位</b>，而且不能超出座位區；只要有一個座位放不下，整組都不會移動（那些位置會顯示紅色）。</div>
+  <ul style="padding-left:22px">
+    <li>只能移動<b>自己處室</b>的座位；管理者可以移動所有座位。</li>
+    <li>移錯了可以用 <a href="#undo">復原</a> 還原。</li>
+    <li>拖曳移動需要<b>滑鼠</b>，手機、平板目前不支援；可以改用「解除預約」再重新預約。</li>
+  </ul>
+</section>
+
+<!-- 7 -->
 <section id="delete">
-  <h2><span class="no">6</span>批次刪除</h2>
+  <h2><span class="no">7</span>批次刪除</h2>
   <h3>框選刪除（刪掉一部分）</h3>
   <ol class="steps">
     <li>按 <span class="btn">框選刪除</span>，按鈕會變紅，座位圖外框也變紅，表示進入<b>刪除模式</b>。</li>
@@ -211,7 +242,7 @@ details[open] summary{margin-bottom:6px}
 
 <!-- 7 -->
 <section id="import">
-  <h2><span class="no">7</span>用 Excel 匯入名單</h2>
+  <h2><span class="no">8</span>用 Excel 匯入名單</h2>
   <p>名單很長時，用 Excel 一次匯入最快。</p>
   <div class="two">
     <figure class="narrow"><a href="guide/09-import.png" target="_blank"><img src="guide/09-import.png" alt="匯入名單" loading="lazy"></a><figcaption>匯入名單視窗（檢查結果範例）</figcaption></figure>
@@ -240,7 +271,7 @@ details[open] summary{margin-bottom:6px}
 
 <!-- 8 -->
 <section id="undo">
-  <h2><span class="no">8</span>復原（誤刪救回）</h2>
+  <h2><span class="no">9</span>復原（誤刪救回）</h2>
   <p>每次<b>刪除或覆蓋</b>座位之前，系統都會自動存一份備份，每個日期保留最近 20 次。</p>
   <div class="two">
     <figure class="narrow"><a href="guide/10-history.png" target="_blank"><img src="guide/10-history.png" alt="復原" loading="lazy"></a><figcaption>復原視窗</figcaption></figure>
@@ -257,7 +288,7 @@ details[open] summary{margin-bottom:6px}
 
 <!-- 9 -->
 <section id="print">
-  <h2><span class="no">9</span>列印通知單／場地圖、匯出</h2>
+  <h2><span class="no">10</span>列印通知單／場地圖、匯出</h2>
   <table>
     <tr><th>按鈕</th><th>用途</th></tr>
     <tr><td><span class="btn">列印通知單</span></td><td>把<b>你處室</b>在這個日期的得獎者印成小卡，A4 一頁 8 張，裁開發給學生，上面寫著座位位置。只會印<b>有填姓名或獎項</b>的座位。</td></tr>
@@ -270,7 +301,7 @@ details[open] summary{margin-bottom:6px}
 
 <!-- 10 -->
 <section id="overview">
-  <h2><span class="no">10</span>總覽模式（看從第幾排開始坐）</h2>
+  <h2><span class="no">11</span>總覽模式（看從第幾排開始坐）</h2>
   <p>典禮當天或排座位時，想一眼看出全場的安排，就按上方的 <span class="btn">總覽模式</span>。它會<b>從第 1 排顯示到最後一排有人預約的位置</b>，後面沒人的排不顯示。上方的管理按鈕也會全部隱藏，座位<b>放到最大</b>、字體清楚，適合投影到大螢幕。</p>
   <figure><a href="guide/12-overview.png" target="_blank"><img src="guide/12-overview.png" alt="總覽模式" loading="lazy"></a><figcaption><span class="n inline">1</span> 按「返回編輯」（或鍵盤 Esc）回到原本畫面　<span class="n inline">2</span> 日期、顯示到第幾排、各處室人數</figcaption></figure>
   <ul style="padding-left:22px">
@@ -282,7 +313,7 @@ details[open] summary{margin-bottom:6px}
 
 <!-- 11 -->
 <section id="members">
-  <h2><span class="no">11</span>管理者：成員管理</h2>
+  <h2><span class="no">12</span>管理者：成員管理</h2>
   <p>只有管理者看得到上方的 <span class="btn">成員管理</span> 按鈕，用來查看和調整每位同仁的處室。</p>
   <div class="two">
     <figure class="narrow"><a href="guide/13-members.png" target="_blank"><img src="guide/13-members.png" alt="成員管理" loading="lazy"></a><figcaption>成員管理視窗</figcaption></figure>
@@ -333,7 +364,7 @@ details[open] summary{margin-bottom:6px}
 
   <details>
     <summary>不小心刪掉了！</summary>
-    <p>按上方的 <span class="btn">復原</span>，選刪除之前的時間點即可救回（見第 8 步）。</p>
+    <p>按上方的 <span class="btn">復原</span>，選刪除之前的時間點即可救回（見第 9 步）。</p>
   </details>
 </section>
 

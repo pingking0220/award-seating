@@ -71,7 +71,7 @@ def shot(page, name, marks, clip=None, pad=24):
 
 with sync_playwright() as p:
     b = p.chromium.launch()
-    ctx = b.new_context(viewport={"width": 1860, "height": 1000}, device_scale_factor=1)
+    ctx = b.new_context(viewport={"width": 2000, "height": 1400}, device_scale_factor=1)
     ctx.add_init_script("window.print = () => {};")
     ctx.route("**/*gstatic.com/**", lambda r: r.abort())   # 不載入 Firebase → 絕不會寫到正式資料庫
     page = ctx.new_page()
@@ -95,7 +95,7 @@ with sync_playwright() as p:
     page.evaluate(SAMPLE); as_role(page, "edu")
     shot(page, "03-main", [
         ("#user-pill", 1, "tl"), ("#dept-edu", 2, "tl"),
-        (["#btn-delmode", "button[onclick='showHistory()']"], 3, "tl"),
+        (["#btn-movemode", "button[onclick='showHistory()']"], 3, "tl"),
         (["button[onclick='exportCSV()']", "#btn-guide"], 4, "tl"),
         ("#role-banner", 5, "l"), ("#fields .field:first-child", 6, "tl"),
         (["#f-class", "#f-name"], 7, "tl"), ("#seating-outer", 8, "tl"), ("#status-bar", 9, "l")])
@@ -118,6 +118,25 @@ with sync_playwright() as p:
     shot(page, "06-edit", [("#release-edit", 1, "l"), ("#btn-release-save", 2, "bl"), ("#btn-release-del", 3, "bl")],
          clip="#release-overlay .modal")
     page.evaluate("closeRelease()")
+
+    # 15 單一座位拖曳（拍完移回原位放開＝取消）
+    x1, y1 = page.locator("#seat-1-1-3").bounding_box()["x"] + 40, page.locator("#seat-1-1-3").bounding_box()["y"] + 36
+    t = page.locator("#seat-5-1-5").bounding_box()
+    page.mouse.move(x1, y1); page.mouse.down(); page.mouse.move(t["x"] + 40, t["y"] + 36, steps=10)
+    shot(page, "15-move-single", [("#seat-1-1-3", 1, "l"), ("#seat-5-1-5", 2, "r")], clip=["#stage", "#seat-6-2-3"], pad=10)
+    page.mouse.move(x1, y1, steps=5); page.mouse.up(); page.wait_for_timeout(100)
+
+    # 16 移動模式：框選兩席 → 整批拖曳（拍完移回原位放開＝取消）
+    page.click("#btn-movemode"); page.wait_for_timeout(2600)
+    a = page.locator("#seat-2-1-1").bounding_box(); z = page.locator("#seat-2-1-3").bounding_box()
+    page.mouse.move(a["x"] - 20, a["y"] + 10); page.mouse.down(); page.mouse.move(z["x"] + 60, z["y"] + 60, steps=8); page.mouse.up()
+    page.wait_for_timeout(2600)
+    s0 = page.locator("#seat-2-1-2").bounding_box(); t = page.locator("#seat-8-1-4").bounding_box()
+    page.mouse.move(s0["x"] + 40, s0["y"] + 36); page.mouse.down(); page.mouse.move(t["x"] + 40, t["y"] + 36, steps=10)
+    shot(page, "16-move-group", [("#btn-movemode", 1, "tl"), (["#seat-2-1-2", "#seat-2-1-3"], 2, "l"),
+                                 (["#seat-8-1-4", "#seat-8-1-5"], 3, "l")], clip=["header", "#seat-9-2-3"], pad=0)
+    page.mouse.move(s0["x"] + 40, s0["y"] + 36, steps=5); page.mouse.up(); page.wait_for_timeout(100)
+    page.evaluate("toggleMoveMode()"); page.wait_for_timeout(2600)
 
     # 7 框選刪除
     page.click("#btn-delmode"); page.wait_for_timeout(2600)

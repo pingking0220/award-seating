@@ -99,6 +99,15 @@ main{max-width:1560px;margin:0 auto;padding:20px 24px 60px}
 body.delmode .seat.booked:hover{border-color:#C0392B}
 body.delmode #seating-outer{border-color:#C0392B}
 #drag-rect.del{border-color:#C0392B;background:rgba(192,57,43,.1)}
+#drag-rect.mv{border-color:#E67E22;background:rgba(230,126,34,.1)}
+#btn-movemode.active{background:#E67E22;color:#fff;border-color:#E67E22}
+body.movemode #seating-outer{border-color:#E67E22}
+.seat.movable{cursor:grab}
+.seat.move-sel{outline:3px solid #E67E22;outline-offset:-3px}
+.seat.mv-src{opacity:.35}
+.seat.mv-ok{outline:3px dashed #2E9E5B;outline-offset:-3px;background:#E3F6EA !important}
+.seat.mv-bad{outline:3px dashed #C0392B;outline-offset:-3px;background:#FBE3E0 !important}
+#move-ghost{position:fixed;display:none;pointer-events:none;z-index:70;background:var(--ink);color:#fff;font-size:13px;padding:4px 10px;border-radius:6px;white-space:nowrap}
 
 .field input[type=date]{width:170px}
 #date-badge{display:inline-block;margin-left:8px;font-size:11px;padding:1px 8px;border-radius:99px;background:var(--line);color:var(--ink);font-weight:500;vertical-align:1px}
@@ -193,6 +202,7 @@ body.overview .row-label{font-size:14px}
   <button class="dept-btn" id="dept-stu" onclick="setDept('stu')">學務處</button>
   <button class="dept-btn" id="dept-cou" onclick="setDept('cou')">輔導室</button>
   <button class="dept-btn" id="dept-kin" onclick="setDept('kin')">幼兒園</button>
+  <button class="tool-btn write-tool" id="btn-movemode" onclick="toggleMoveMode()">移動座位</button>
   <button class="tool-btn write-tool" id="btn-delmode" onclick="toggleDelMode()">框選刪除</button>
   <button class="tool-btn write-tool" onclick="showClearAll()">全部刪除</button>
   <button class="tool-btn write-tool" onclick="showImport()">匯入名單</button>
@@ -224,7 +234,7 @@ body.overview .row-label{font-size:14px}
       <label>得獎者姓名（選填）</label>
       <input id="f-name" type="text" placeholder="例：王小明" maxlength="40">
     </div>
-    <div id="hint">選擇典禮日期（可選<b>未來日期</b>提前預約），座位圖會自動切換到該場次。填好處室與資料後，點選或<b>拖曳框選</b>座位預約（手機／平板請逐一點選，滑動可捲動座位圖）；開啟「框選刪除」可批次刪除本處室座位。</div>
+    <div id="hint">選擇典禮日期（可選<b>未來日期</b>提前預約），座位圖會自動切換到該場次。填好處室與資料後，點選或<b>拖曳框選</b>座位預約（手機／平板請逐一點選，滑動可捲動座位圖）；<b>拖曳已預約的座位</b>可換位置，按「移動座位」可整批搬移；開啟「框選刪除」可批次刪除本處室座位。</div>
   </div>
 
   <div id="overview-info"></div>
@@ -375,6 +385,7 @@ body.overview .row-label{font-size:14px}
 </div>
 
 <div id="toast"></div>
+<div id="move-ghost"></div>
 
 <script>
 /* ============================================================
@@ -851,8 +862,10 @@ function updateDateBadge() {
 
 function toggleDelMode() {
   delMode = !delMode;
+  if (delMode && moveMode) { moveMode = false; moveSel = []; document.getElementById('btn-movemode').classList.remove('active'); document.body.classList.remove('movemode'); }
   document.getElementById('btn-delmode').classList.toggle('active', delMode);
   document.body.classList.toggle('delmode', delMode);
+  renderAll();
   showToast(delMode ? '刪除模式：框選本處室座位即可批次刪除' : '已回到預約模式');
 }
 
@@ -912,6 +925,8 @@ function renderSeat(key) {
   const d = seats[key];
   const [r, z, s] = key.split('-').map(Number);
   el.innerHTML = '';
+  el.classList.toggle('move-sel', moveSel.includes(key));
+  el.classList.toggle('movable', !delMode && canMoveSeat(key));
   if (d) {
     const m = DEPT_META[d.dept];
     el.style.background = m.bg;
@@ -950,6 +965,7 @@ function renderSeat(key) {
 }
 
 function renderAll() {
+  moveSel = moveSel.filter(k => canMoveSeat(k));
   document.querySelectorAll('.seat').forEach(el => {
     renderSeat(seatKey(+el.dataset.r, +el.dataset.z, +el.dataset.s));
   });
@@ -965,6 +981,7 @@ function toggleOverview() {
   document.getElementById('btn-overview').classList.toggle('active', overview);
   document.getElementById('btn-overview').textContent = overview ? '返回編輯' : '總覽模式';
   if (overview && delMode) toggleDelMode();
+  if (overview && moveMode) toggleMoveMode();
   if (overview) { window.scrollTo(0, 0); applyOverview(); } else resetOverview();
 }
 function resetOverview() {
@@ -1002,7 +1019,10 @@ function fitOverview() {
 }
 window.addEventListener('resize', () => { if (overview) fitOverview(); });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && overview && !document.querySelector('.overlay.show')) toggleOverview();
+  if (e.key !== 'Escape' || document.querySelector('.overlay.show')) return;
+  if (overview) toggleOverview();
+  else if (moveMode && moveSel.length) { moveSel = []; renderAll(); }
+  else if (moveMode) toggleMoveMode();
 });
 
 function updateStatus() {
@@ -1027,6 +1047,15 @@ function onSeatClick(e) {
     showDeptPick();
     return;
   }
+  if (moveMode) {
+    /* 移動模式：點選自己的座位加入／移出選取群組 */
+    if (canMoveSeat(key)) {
+      const i = moveSel.indexOf(key);
+      if (i >= 0) moveSel.splice(i, 1); else moveSel.push(key);
+      renderAll();
+    } else if (seats[key]) showRelease(key);
+    return;
+  }
   if (delMode) {
     if (seats[key] && seats[key].dept === currentDept) {
       selecting = [key];
@@ -1041,15 +1070,106 @@ function onSeatClick(e) {
   showModal();
 }
 
+/* ---------- 拖曳移動座位（單一座位／整批） ---------- */
+let moveMode = false;     // 「移動座位」模式：可框選或點選多個座位成一組
+let moveSel = [];         // 移動模式下已選取的座位
+let moveDrag = null;      // 拖曳中：{ keys, from, plan }
+const ZONE_OFFSET = ZONES.map((_, z) => ZONES.slice(0, z).reduce((a, b) => a + b, 0));   // 各區第一個座位的全場欄位：[0, 4, 11]
+const TOTAL_COLS = ZONES.reduce((a, b) => a + b, 0);
+
+function canMoveSeat(k) { return !!seats[k] && canWrite() && (isAdmin() || seats[k].dept === currentDept); }
+function keyToRC(k) { const [r, z, s] = k.split('-').map(Number); return { r: r, c: ZONE_OFFSET[z] + s }; }
+function rcToKey(r, c) {
+  if (r < 0 || r >= ROWS || c < 0 || c >= TOTAL_COLS) return null;
+  let z = ZONES.length - 1;
+  while (c < ZONE_OFFSET[z]) z--;
+  const k = seatKey(r, z, c - ZONE_OFFSET[z]);
+  return REMOVED_SEATS.has(k) ? null : k;
+}
+function seatLabel(k) { const [r, z, s] = k.split('-').map(Number); return '第' + (r + 1) + '排' + ZONE_NAMES[z] + (s + 1); }
+
+/* 把 keys 依 from→to 的位移整批搬過去；ok=false 時 reason 說明原因 */
+function planMove(keys, from, to) {
+  if (!to || to === from) return { ok: false, reason: '' };
+  const a = keyToRC(from), b = keyToRC(to);
+  const dr = b.r - a.r, dc = b.c - a.c;
+  const pairs = [];
+  let bad = 0, swap = null, reason = '';
+  keys.forEach(k => {
+    const rc = keyToRC(k);
+    const t = rcToKey(rc.r + dr, rc.c + dc);
+    let ok = true;
+    if (!t) { ok = false; reason = reason || '有座位會移到場地外或不存在的位置'; }
+    else if (seats[t] && !keys.includes(t)) {
+      if (keys.length === 1 && canMoveSeat(t)) swap = t;              // 單一座位拖到自己處室的座位上 → 交換
+      else { ok = false; reason = reason || (keys.length === 1 ? '目標座位屬於其他處室，不能交換' : '目標位置已有其他預約，整批移動只能放到空位'); }
+    }
+    if (!ok) bad++;
+    pairs.push({ from: k, to: t, ok: ok });
+  });
+  return { ok: bad === 0, reason: reason, pairs: pairs, swap: swap };
+}
+
+function clearMovePreview() {
+  document.querySelectorAll('.seat.mv-src, .seat.mv-ok, .seat.mv-bad').forEach(el => el.classList.remove('mv-src', 'mv-ok', 'mv-bad'));
+  document.getElementById('move-ghost').style.display = 'none';
+}
+function moveDragOver(cx, cy) {
+  const ghost = document.getElementById('move-ghost');
+  const under = document.elementFromPoint(cx, cy);
+  const el = under && under.closest('.seat');
+  const to = el ? seatKey(+el.dataset.r, +el.dataset.z, +el.dataset.s) : null;
+  const plan = planMove(moveDrag.keys, moveDrag.from, to);
+  moveDrag.plan = plan;
+  clearMovePreview();
+  moveDrag.keys.forEach(k => { const e = document.getElementById('seat-' + k); if (e) e.classList.add('mv-src'); });
+  (plan.pairs || []).forEach(p => { if (!p.to) return; const e = document.getElementById('seat-' + p.to); if (e) e.classList.add(p.ok ? 'mv-ok' : 'mv-bad'); });
+  if (plan.swap) { const e = document.getElementById('seat-' + moveDrag.from); if (e) e.classList.add('mv-ok'); }
+  ghost.textContent = plan.swap ? '交換座位' : ('移動 ' + moveDrag.keys.length + ' 席' + (plan.pairs && !plan.ok ? '（不能放這裡）' : ''));
+  ghost.style.left = (cx + 14) + 'px'; ghost.style.top = (cy + 14) + 'px'; ghost.style.display = 'block';
+}
+function applyMove(plan) {
+  const updates = {};
+  plan.pairs.forEach(p => { updates[p.from] = null; });
+  plan.pairs.forEach(p => { updates[p.to] = Object.assign({}, seats[p.from]); });
+  let msg;
+  if (plan.swap) {
+    updates[plan.pairs[0].from] = Object.assign({}, seats[plan.swap]);
+    msg = '已交換 ' + seatLabel(plan.pairs[0].from) + ' 與 ' + seatLabel(plan.swap) + '（可按「復原」還原）';
+  } else {
+    msg = plan.pairs.length === 1 ? ('已移到 ' + seatLabel(plan.pairs[0].to) + '（可按「復原」還原）') : ('已移動 ' + plan.pairs.length + ' 個座位（可按「復原」還原）');
+  }
+  /* 整批移動後，選取框跟著到新位置，方便再微調 */
+  if (moveMode) moveSel = (moveSel.length && plan.pairs.every(p => moveSel.includes(p.from))) ? plan.pairs.map(p => p.to) : [];
+  persist(currentDate, updates, msg, plan.swap ? '交換座位' : '移動座位');
+}
+function toggleMoveMode() {
+  moveMode = !moveMode;
+  if (moveMode && delMode) toggleDelMode();
+  moveSel = [];
+  document.getElementById('btn-movemode').classList.toggle('active', moveMode);
+  document.body.classList.toggle('movemode', moveMode);
+  renderAll();
+  showToast(moveMode ? '移動模式：框選或點選本處室座位，再拖曳到新位置' : '已回到預約模式');
+}
+
 function addDragListeners() {
   const wrap = document.getElementById('seating-outer');
-  let startX, startY, active = false;
+  let startX, startY, active = null;   // active: 'rect'（框選）或 'move'（拖曳移動）
 
   function pointerDown(cx, cy, target) {
     const t = target.closest('.seat');
-    if (!t || !canWrite() || overview) return false;   // 總覽模式只看不框選（縮放後座標不準）
-    active = true; dragging = false; selecting = [];
-    startX = cx; startY = cy;
+    if (!t || !canWrite() || overview) return false;   // 總覽模式只看不操作（縮放後座標不準）
+    const key = seatKey(+t.dataset.r, +t.dataset.z, +t.dataset.s);
+    dragging = false; selecting = []; startX = cx; startY = cy;
+    if (!delMode && canMoveSeat(key)) {
+      /* 從自己的已預約座位開始拖 → 移動；若它在「移動模式」的選取群組內，就整批移動 */
+      const keys = (moveMode && moveSel.includes(key)) ? moveSel.slice() : [key];
+      moveDrag = { keys: keys, from: key, plan: null };
+      active = 'move';
+    } else {
+      active = 'rect';
+    }
     return true;
   }
   function pointerMove(cx, cy) {
@@ -1057,32 +1177,47 @@ function addDragListeners() {
     const dx = cx - startX, dy = cy - startY;
     if (!dragging && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) dragging = true;
     if (!dragging) return;
+    if (active === 'move') { moveDragOver(cx, cy); return; }
     const rect = document.getElementById('drag-rect');
     rect.classList.toggle('del', delMode);
+    rect.classList.toggle('mv', moveMode);
     const wr = wrap.getBoundingClientRect();
     const x1 = Math.min(startX, cx) - wr.left, y1 = Math.min(startY, cy) - wr.top;
     const x2 = Math.max(startX, cx) - wr.left, y2 = Math.max(startY, cy) - wr.top;
     rect.style.cssText = 'display:block;left:' + x1 + 'px;top:' + y1 + 'px;width:' + (x2 - x1) + 'px;height:' + (y2 - y1) + 'px;';
-    const selCls = delMode ? 'del-selecting' : 'selecting';
+    const selCls = delMode ? 'del-selecting' : (moveMode ? 'move-sel' : 'selecting');
     const newSel = [];
     document.querySelectorAll('.seat').forEach(el => {
       const k = seatKey(+el.dataset.r, +el.dataset.z, +el.dataset.s);
-      const selectable = delMode ? (seats[k] && seats[k].dept === currentDept) : !seats[k];
+      const selectable = delMode ? (seats[k] && seats[k].dept === currentDept) : (moveMode ? canMoveSeat(k) : !seats[k]);
       if (!selectable) return;
       const sr = el.getBoundingClientRect();
       if (sr.right > wr.left + x1 && sr.left < wr.left + x2 && sr.bottom > wr.top + y1 && sr.top < wr.top + y2) newSel.push(k);
     });
     if (newSel.join() !== selecting.join()) {
-      selecting.forEach(k => { const el = document.getElementById('seat-' + k); if (el) el.classList.remove('selecting', 'del-selecting'); });
+      selecting.forEach(k => { const el = document.getElementById('seat-' + k); if (el) el.classList.remove('selecting', 'del-selecting', 'move-sel'); });
       selecting = newSel;
       selecting.forEach(k => { const el = document.getElementById('seat-' + k); if (el) el.classList.add(selCls); });
     }
   }
   function pointerUp() {
     if (!active) return;
-    active = false;
+    const mode = active;
+    active = null;
     document.getElementById('drag-rect').style.display = 'none';
-    if (dragging && selecting.length > 0) showModal();
+    if (mode === 'move') {
+      const plan = moveDrag && moveDrag.plan;
+      clearMovePreview();
+      if (dragging && plan) {
+        if (plan.ok) applyMove(plan);
+        else if (plan.reason) showToast(plan.reason);
+      }
+      moveDrag = null;
+    } else if (dragging && moveMode) {
+      moveSel = selecting.slice(); selecting = [];
+      renderAll();
+      showToast(moveSel.length ? ('已選取 ' + moveSel.length + ' 個座位，拖曳其中任一個即可整批移動') : '沒有選到可移動的座位');
+    } else if (dragging && selecting.length > 0) showModal();
     setTimeout(() => { dragging = false; }, 0);
   }
 
