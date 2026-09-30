@@ -31,6 +31,8 @@ header h1 small{font-size:12px;font-weight:400;color:var(--muted);margin-left:10
 .tool-btn{padding:8px 16px;border-radius:8px;font-size:14px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-family:inherit}
 .tool-btn:hover{background:var(--bg)}
 
+.home{flex-shrink:0;text-decoration:none;font-size:14px;color:var(--muted);padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);white-space:nowrap}
+.home:hover{background:var(--bg);color:var(--ink)}
 #sync-pill{font-size:12px;padding:4px 12px;border-radius:99px;border:1px solid var(--line);color:var(--muted);display:flex;align-items:center;gap:6px}
 #sync-dot{width:8px;height:8px;border-radius:50%;background:#B4B2A9}
 #sync-pill.online #sync-dot{background:#639922}
@@ -198,6 +200,7 @@ body.overview .row-label{font-size:14px}
 <body>
 
 <header>
+  <a class="home" href="https://pingking0220.github.io/" title="回力行國小行政服務首頁">🏠 首頁</a>
   <h1>頒獎典禮座位預約<small>視聽教室 4＋7＋4 × 15 排</small></h1>
   <span id="sync-pill"><span id="sync-dot"></span><span id="sync-text">單機模式</span></span>
   <span id="user-pill" style="display:none"><span id="user-email"></span><span id="user-role"></span><button id="btn-logout" onclick="signOutUser()">登出</button></span>
@@ -381,7 +384,7 @@ body.overview .row-label{font-size:14px}
     <div class="login-sub">請使用學校 Google 帳號登入<br><b>@lsps.tp.edu.tw</b></div>
     <button id="btn-login" onclick="signIn()">使用 Google 帳號登入</button>
     <div id="login-msg"></div>
-    <div style="margin-top:14px;font-size:13px"><a href="guide.html" target="_blank" rel="noopener" style="color:var(--muted)">第一次使用？看操作說明</a></div>
+    <div style="margin-top:14px;font-size:13px"><a href="guide.html" target="_blank" rel="noopener" style="color:var(--muted)">第一次使用？看操作說明</a>　｜　<a href="https://pingking0220.github.io/" style="color:var(--muted)">回行政服務首頁</a></div>
   </div>
 </div>
 
