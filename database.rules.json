@@ -15,11 +15,21 @@
         "$seat": {
           ".write": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw') && ( root.child('roles').child(auth.token.email.toLowerCase().replace('.', ',')).val() == 'admin' || (newData.exists() && newData.child('dept').val() == root.child('roles').child(auth.token.email.toLowerCase().replace('.', ',')).val() && (!data.exists() || data.child('dept').val() == root.child('roles').child(auth.token.email.toLowerCase().replace('.', ',')).val())) || (!newData.exists() && data.child('dept').val() == root.child('roles').child(auth.token.email.toLowerCase().replace('.', ',')).val()) )",
           ".validate": "newData.hasChildren(['dept'])",
-          "dept": { ".validate": "newData.val() == 'edu' || newData.val() == 'stu' || newData.val() == 'cou' || newData.val() == 'kin'" },
-          "award": { ".validate": "newData.isString() && newData.val().length <= 40" },
-          "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
-          "classNo": { ".validate": "newData.isString() && newData.val().length <= 20" },
-          "$other": { ".validate": false }
+          "dept": {
+            ".validate": "newData.val() == 'edu' || newData.val() == 'stu' || newData.val() == 'cou' || newData.val() == 'kin'"
+          },
+          "award": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "name": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "classNo": {
+            ".validate": "newData.isString() && newData.val().length <= 20"
+          },
+          "$other": {
+            ".validate": false
+          }
         }
       }
     },
@@ -27,6 +37,81 @@
       ".read": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw')",
       "$date": {
         ".write": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw')"
+      }
+    },
+    "venue": {
+      "places": {
+        ".read": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw')",
+        ".write": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw') && root.child('roles').child(auth.token.email.toLowerCase().replace('.', ',')).val() == 'admin'",
+        "$pid": {
+          ".validate": "newData.hasChildren(['name']) && newData.child('name').isString() && newData.child('name').val().length <= 30"
+        }
+      },
+      "config": {
+        ".read": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw')",
+        ".write": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw') && root.child('roles').child(auth.token.email.toLowerCase().replace('.', ',')).val() == 'admin'"
+      },
+      "bk": {
+        ".read": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw')",
+        "$date": {
+          "$pid": {
+            "$slot": {
+              ".write": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw') && (root.child('roles').child(auth.token.email.toLowerCase().replace('.', ',')).val() == 'admin' || (!data.exists() && newData.exists() && newData.child('by').val() == auth.token.email.toLowerCase() && root.child('venue').child('places').child($pid).child('active').val() == true && ((root.child('venue').child('places').child($pid).child('needApproval').val() == true && newData.child('status').val() == 'wait') || (!(root.child('venue').child('places').child($pid).child('needApproval').val() == true) && newData.child('status').val() == 'ok'))) || (data.exists() && !newData.exists() && (data.child('by').val() == auth.token.email.toLowerCase() || root.child('venue').child('places').child($pid).child('approvers').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)) || (data.exists() && newData.exists() && root.child('venue').child('places').child($pid).child('approvers').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true && newData.child('by').val() == data.child('by').val() && newData.child('title').val() == data.child('title').val()))",
+              ".validate": "newData.hasChildren(['title', 'by', 'status', 'at']) && $date.matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && $slot.matches(/^(m|p[1-7]|nap|aft|eve)$/)",
+              "title": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60"
+              },
+              "by": {
+                ".validate": "newData.isString() && newData.val().length <= 80"
+              },
+              "name": {
+                ".validate": "newData.isString() && newData.val().length <= 40"
+              },
+              "unit": {
+                ".validate": "newData.isString() && newData.val().length <= 30"
+              },
+              "series": {
+                ".validate": "newData.isString() && newData.val().length <= 40"
+              },
+              "time": {
+                ".validate": "newData.isString() && newData.val().length <= 20"
+              },
+              "note": {
+                ".validate": "newData.isString() && newData.val().length <= 200"
+              },
+              "src": {
+                ".validate": "newData.isString() && newData.val().length <= 20"
+              },
+              "status": {
+                ".validate": "newData.val() == 'ok' || newData.val() == 'wait'"
+              },
+              "at": {
+                ".validate": "newData.isNumber()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          }
+        }
+      },
+      "notice": {
+        "$ek": {
+          ".read": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw') && $ek == auth.token.email.toLowerCase().replace('.', ',')",
+          "$nid": {
+            ".write": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.endsWith('@lsps.tp.edu.tw') && ((!data.exists() && newData.exists()) || ($ek == auth.token.email.toLowerCase().replace('.', ',') && !newData.exists()))",
+            ".validate": "newData.hasChildren(['text', 'at'])",
+            "text": {
+              ".validate": "newData.isString() && newData.val().length <= 300"
+            },
+            "at": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
       }
     }
   }
